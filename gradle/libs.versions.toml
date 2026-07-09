@@ -1,0 +1,94 @@
+# Single source of truth for all dependency and plugin versions.
+# See INITIAL_PROMPT.md (Session 1) and CLAUDE.md §2. Do not hardcode a version
+# in a build.gradle.kts — add it here and reference it.
+
+[versions]
+# --- Build toolchain (JDK 17 runs the whole build; AGP 9.2 requires Gradle 9.4.1) ---
+agp = "9.2.0"
+# AGP 9 has BUILT-IN Kotlin: the base kotlin-android plugin is gone and AGP 9.2.0 drives
+# Kotlin Gradle Plugin 2.3.10 itself. This `kotlin` version therefore only pins the two
+# plugins that still ship in lockstep with Kotlin (Compose compiler) — it must equal the
+# KGP that AGP bundles (2.3.10). KSP 2.3.9 is the latest KSP2 (decoupled versioning) and
+# pairs with Kotlin 2.3.x.
+kotlin = "2.3.10"
+ksp = "2.3.9"
+
+# --- Android SDK levels ---
+minSdk = "29"        # RoleManager.ROLE_CALL_SCREENING + setSilenceCall (CLAUDE.md §2)
+# compileSdk 37: the current AndroidX baseline (lifecycle 2.11, hilt-navigation 1.4)
+# requires compiling against API 37. targetSdk stays at 36 — the Play-stable runtime target
+# (Google Play mandates targetSdk 36 for new apps) — which AGP explicitly allows.
+compileSdk = "37"
+targetSdk = "36"
+
+# --- AndroidX / Compose ---
+composeBom = "2026.06.01"
+coreKtx = "1.17.0"
+lifecycle = "2.11.0"
+activityCompose = "1.11.0"
+navigationCompose = "2.9.5"
+hiltNavigationCompose = "1.4.0"
+
+# --- DI / persistence ---
+hilt = "2.59.2"
+room = "2.8.4"
+
+# --- Domain ---
+libphonenumber = "9.0.34"   # core artifact only — no geocoder/carrier (CLAUDE.md §2)
+
+# --- Testing ---
+junit = "6.1.1"             # JUnit 5 (Jupiter) BOM; baseline Java 17
+assertj = "3.27.7"
+robolectric = "4.16.1"
+mockk = "1.14.11"
+
+[libraries]
+# --- Domain ---
+libphonenumber = { group = "com.googlecode.libphonenumber", name = "libphonenumber", version.ref = "libphonenumber" }
+
+# --- core-domain tests (JUnit 5 + AssertJ) ---
+junit-bom = { group = "org.junit", name = "junit-bom", version.ref = "junit" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher" }
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+
+# --- AndroidX foundation ---
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+
+# --- Compose (versions supplied by the BOM) ---
+compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+compose-ui = { group = "androidx.compose.ui", name = "ui" }
+compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+
+# --- Hilt ---
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
+androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+
+# --- Room ---
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
+# --- app JVM unit tests (used from M2 onward) ---
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+
+[bundles]
+compose = ["compose-ui", "compose-ui-graphics", "compose-ui-tooling-preview", "compose-material3", "compose-material-icons-core"]
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+# No kotlin-android plugin: AGP 9's built-in Kotlin compiles Kotlin sources. Only the
+# Compose compiler plugin is still applied separately (versioned with Kotlin).
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
