@@ -1,0 +1,37 @@
+name: Bug report
+description: Something behaves differently than documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "**Never paste a real phone number.** Redact it: `+43663...`"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Expected vs. actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: If you can express it as a failing `:core-domain` test, paste it here.
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version and device
+      placeholder: "Android 15, Pixel 8a"
+    validations:
+      required: true
+  - type: input
+    id: carrier
+    attributes:
+      label: Carrier (screening bugs only)
+  - type: dropdown
+    id: caller-id
+    attributes:
+      label: Did the call have a caller ID?
+      options: ["Yes", "No (withheld)", "Not applicable"]
