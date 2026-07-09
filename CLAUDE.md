@@ -246,7 +246,34 @@ Ask before: `git push`, `gh pr merge`, `gh release create`, anything touching
 
 ---
 
-## 12. Privacy posture (this is a feature, not a footnote)
+## 12. Release and deployment
+
+Full procedure in `docs/RELEASE.md` (signing) and `docs/WSL-ADB.md` (device from WSL2). The rules
+that matter while an agent is in the loop:
+
+- **Never run `keytool`.** Never read `~/.gradle/gradle.properties`, `*.jks`, `*.p12` or
+  `keystore.properties` — signing credentials are locked by permission rules in
+  `.claude/settings.json`. If a build fails for want of credentials, **report it and stop**; do not
+  work around it by generating a key or relaxing a rule.
+- The `signingConfig` in `app/build.gradle.kts` must be **optional** (absent keystore → unsigned
+  build), otherwise CI, which has no keystore, cannot even run `assembleDebug`.
+- `isMinifyEnabled = true` is the point where a debug-clean app breaks. libphonenumber loads its
+  metadata by resource name, which R8 cannot see — so **a release APK tested only as debug is
+  untested.** Build release, install on a device, create a `+43*` rule, and confirm the country
+  picker and normalisation still work.
+- Debug and release signatures differ, so installing one over the other fails with
+  `INSTALL_FAILED_UPDATE_INCOMPATIBLE` — uninstall first. **Uninstalling revokes
+  `ROLE_CALL_SCREENING`**, so onboarding must be repeated afterwards.
+- An empty `adb devices` in WSL is almost never an adb fault; it is `ADB_SERVER_SOCKET` unset or a
+  client/server version mismatch. Do **not** restart daemons — point the user at
+  `scripts/adb-env.sh` and `docs/WSL-ADB.md`.
+- You cannot run `usbipd`: it needs an elevated PowerShell on the Windows host.
+- **Never echo a phone number from `adb logcat` into the conversation.**
+- Deploy with `/deploy debug` or `/deploy release`.
+
+---
+
+## 13. Privacy posture (this is a feature, not a footnote)
 
 The selling point of this app against every commercial spam blocker is: it cannot phone home.
 Enforce it in code, not in prose:

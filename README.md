@@ -111,6 +111,9 @@ cd vorwahlguard
 Requires **JDK 17** (the Android Gradle Plugin does not support newer JDKs for the build itself)
 and the Android SDK. Everything else is resolved by Gradle.
 
+Signing a release APK: [`docs/RELEASE.md`](docs/RELEASE.md).
+Deploying to a physical device from WSL2: [`docs/WSL-ADB.md`](docs/WSL-ADB.md).
+
 ## Architecture
 
 A hexagonal split along the one boundary that matters here: the screening decision has nothing

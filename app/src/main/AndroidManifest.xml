@@ -3,7 +3,7 @@
   VorwahlGuard manifest.
 
   NON-NEGOTIABLE: this file must never declare any network permission (no INTERNET, no
-  network-state access). CI fails the build if one appears. See CLAUDE.md §1 and §12.
+  network-state access). CI fails the build if one appears. See CLAUDE.md §1 and §13.
 
   The CallScreeningService is declared here (permission + intent filter + exported) but its
   screening logic is not implemented yet — M0 ships a fail-open stub. See CLAUDE.md §3, §M2.
