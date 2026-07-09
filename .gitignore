@@ -20,6 +20,7 @@ captures/
 
 # Signing — never commit these
 *.jks
+*.p12
 *.keystore
 keystore.properties
 signing.properties
