@@ -18,7 +18,15 @@
       "Bash(gh issue:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr list:*)",
-      "Bash(gh run:*)"
+      "Bash(gh run:*)",
+      "Bash(adb devices)",
+      "Bash(adb version)",
+      "Bash(adb install:*)",
+      "Bash(adb uninstall:*)",
+      "Bash(adb logcat:*)",
+      "Bash(apksigner verify:*)",
+      "Bash(sha256sum:*)",
+      "Bash(source scripts/adb-env.sh)"
     ],
     "ask": [
       "Bash(git push:*)",
@@ -27,7 +35,11 @@
       "Bash(gh release:*)",
       "Bash(gh repo:*)",
       "Edit(.github/workflows/**)",
-      "Edit(app/src/main/AndroidManifest.xml)"
+      "Edit(app/src/main/AndroidManifest.xml)",
+      "Bash(adb shell:*)",
+      "Bash(adb tcpip:*)",
+      "Bash(adb connect:*)",
+      "Bash(adb root)"
     ],
     "deny": [
       "Bash(git push --force:*)",
@@ -41,7 +53,12 @@
       "Read(**/*.jks)",
       "Read(**/*.keystore)",
       "Read(**/.env)",
-      "Read(**/.env.*)"
+      "Read(**/.env.*)",
+      "Bash(keytool:*)",
+      "Bash(apksigner sign:*)",
+      "Read(~/.gradle/gradle.properties)",
+      "Read(**/*.p12)",
+      "Bash(adb kill-server)"
     ]
   }
 }
