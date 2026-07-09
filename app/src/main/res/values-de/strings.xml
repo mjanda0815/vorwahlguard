@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German strings. app_name is intentionally not overridden (same brand name). -->
+<resources>
+    <!-- Bottom navigation -->
+    <string name="nav_overview">Übersicht</string>
+    <string name="nav_rules">Regeln</string>
+    <string name="nav_log">Protokoll</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- M0 placeholders (replaced with real screens in M4) -->
+    <string name="screen_overview_placeholder">Übersicht — folgt in Kürze</string>
+    <string name="screen_rules_placeholder">Regeln — folgt in Kürze</string>
+    <string name="screen_log_placeholder">Protokoll — folgt in Kürze</string>
+    <string name="screen_settings_placeholder">Einstellungen — folgt in Kürze</string>
+</resources>
