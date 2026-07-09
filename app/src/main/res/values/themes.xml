@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Base platform theme (light). The real UI is drawn by Compose Material 3; this XML theme
+  only styles the window before setContent(). It deliberately uses a platform theme so the
+  app does not depend on the com.google.android.material XML library. Dark variant lives in
+  values-night/themes.xml.
+-->
+<resources>
+    <style name="Theme.VorwahlGuard" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

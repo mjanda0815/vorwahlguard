@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Base platform theme (dark). Compose Material 3 draws the actual UI. -->
+<resources>
+    <style name="Theme.VorwahlGuard" parent="android:Theme.Material.NoActionBar" />
+</resources>
