@@ -4,7 +4,9 @@ import android.net.Uri
 import android.telecom.Call
 import android.telecom.CallScreeningService.CallResponse
 import io.janda.vorwahlguard.data.contacts.CachedContactsLookup
+import io.janda.vorwahlguard.data.events.RetentionPurger
 import io.janda.vorwahlguard.data.rules.CachedRuleRepository
+import io.janda.vorwahlguard.data.settings.CachedSettingsRepository
 import io.janda.vorwahlguard.domain.model.PhoneNumber
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.model.ScreeningDecision
@@ -14,8 +16,8 @@ import io.janda.vorwahlguard.domain.port.out.CallEventRecorder
 import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.ContactsLookup
 import io.janda.vorwahlguard.domain.port.out.NumberNormalizer
-import io.janda.vorwahlguard.domain.port.out.SettingsRepository
 import io.mockk.Runs
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -53,8 +55,9 @@ class VorwahlGuardScreeningServiceTest {
     private lateinit var contactsCache: CachedContactsLookup
     private lateinit var ruleCache: CachedRuleRepository
     private lateinit var simRegionProvider: SimRegionProvider
-    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var settingsCache: CachedSettingsRepository
     private lateinit var recorder: CallEventRecorder
+    private lateinit var purger: RetentionPurger
     private lateinit var clock: Clock
 
     /** Every [respondToCall] the service issues, in order, for count and flag assertions. */
@@ -70,12 +73,13 @@ class VorwahlGuardScreeningServiceTest {
         contactsCache = mockk(relaxed = true)
         ruleCache = mockk(relaxed = true)
         simRegionProvider = mockk(relaxed = true)
-        settingsRepository = mockk()
+        settingsCache = mockk(relaxed = true)
         recorder = mockk()
+        purger = mockk(relaxed = true)
         clock = mockk()
 
         every { simRegionProvider.current() } returns "AT"
-        every { settingsRepository.current() } returns defaultSettings
+        every { settingsCache.current() } returns defaultSettings
         every { clock.now() } returns Instant.EPOCH
         every { recorder.record(any()) } just Runs
 
@@ -101,8 +105,9 @@ class VorwahlGuardScreeningServiceTest {
         svc.contactsCache = contactsCache
         svc.ruleCache = ruleCache
         svc.simRegionProvider = simRegionProvider
-        svc.settingsRepository = settingsRepository
+        svc.settingsCache = settingsCache
         svc.recorder = recorder
+        svc.purger = purger
         svc.clock = clock
         svc.mapper = CallResponseMapper()
         svc.backgroundDispatcher = dispatcher
@@ -122,9 +127,12 @@ class VorwahlGuardScreeningServiceTest {
     }
 
     @Test
-    fun `onCreate warms region before contacts and rules`() {
-        verifyOrder {
+    fun `onCreate warms region before settings, rules and contacts`() {
+        // settingsCache.refresh() is suspend (CachedSettingsRepository reads DataStore via
+        // SettingsStore); coVerifyOrder is the mockk entry point that can wait on suspend calls.
+        coVerifyOrder {
             simRegionProvider.refresh()
+            settingsCache.refresh()
             ruleCache.refresh()
             contactsCache.refresh()
         }
@@ -288,7 +296,7 @@ class VorwahlGuardScreeningServiceTest {
     @Test
     fun `contacts bypass consults the rule engine with isKnownContact true`() {
         val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
-        every { settingsRepository.current() } returns Settings(true, 90, false, false)
+        every { settingsCache.current() } returns Settings(true, 90, false, false)
         every { normalizer.normalize(any(), any()) } returns number
         every { contactsLookup.isKnownContact(number) } returns true
         every { screenIncomingCall.decide(number, true, Instant.EPOCH) } returns
