@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    testImplementation(libs.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.mockk)
 }
