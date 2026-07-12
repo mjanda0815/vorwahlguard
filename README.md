@@ -56,10 +56,26 @@ The most specific rule wins. On a tie, `Zulassen` beats `Lautlos` beats `Sperren
 For a whole country code, **Lautlos** is the safer choice — a legitimate call from that country
 still reaches your voicemail. The app suggests it when you create a `+XX*` rule.
 
+## Your contacts are the exception
+
+A prefix blocklist is blunt on purpose: `+43*  Sperren` stops a whole spam campaign, but it
+would also stop your Austrian friends. Rather than carve out an allow rule for each of them by
+hand, turn on **Kontakte immer zulassen** and *everyone already in your address book is waved
+through* — no matter which `Sperren` or `Lautlos` rule they would otherwise match. The contact
+exception has unconditional priority: it is checked before your rules are consulted at all.
+
+- It runs entirely on-device against your local contacts. Like everything else here it needs no
+  network, and nothing leaves the phone.
+- It is **off by default** and requires the contacts read permission, which you grant explicitly.
+- It fails closed: deny or later revoke that permission and the exception simply switches off —
+  it never falls open into "allow everyone", it just stops treating anyone as a known contact.
+
 ## Features
 
 - **Country picker and free-text prefixes** — both produce the same kind of rule
 - **Withheld numbers** — a dedicated `PRIVATE` token for calls with no caller ID
+- **Contacts whitelist** — optionally exempt everyone in your address book from every blocking
+  rule, evaluated locally with unconditional priority
 - **Honest about ambiguity** — `+1` is not "the USA", it is the USA, Canada and twenty
   Caribbean territories. The app tells you before you block them all.
 - **Statistics** — what got screened, when, from where, by which rule
