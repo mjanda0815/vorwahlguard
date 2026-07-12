@@ -12,7 +12,11 @@ local.properties
 *.class
 bin/
 gen/
-out/
+# Anchored to the repo root: this is IntelliJ's classic (non-Gradle) compiler output
+# directory. An unanchored `out/` also matches `.../port/out/`, the driven-port package
+# docs/ARCHITECTURE.md specifies for every module — that silently blocked every file under
+# it from ever being tracked. Gradle output is already covered by `build/` above.
+/out/
 release/
 captures/
 .externalNativeBuild/

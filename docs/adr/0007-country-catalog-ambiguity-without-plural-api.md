@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted
+Superseded by [0008](0008-country-catalog-uses-plural-api-directly.md). Kept for the record:
+two independent source-fetch attempts (wrong branch, then a truncated correct-tag fetch) both
+failed to prove `getRegionCodesForCountryCode` was absent — it wasn't. See 0008 for the
+`javap`-verified fact and the corrected decision.
 
 ## Context
 
