@@ -23,6 +23,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import java.time.Instant
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -78,26 +79,34 @@ class VorwahlGuardScreeningServiceTest {
         every { clock.now() } returns Instant.EPOCH
         every { recorder.record(any()) } just Runs
 
-        service = spyk(VorwahlGuardScreeningService())
-        every { service.respondToCall(any(), capture(responses)) } just Runs
-
-        service.screenIncomingCall = screenIncomingCall
-        service.normalizer = normalizer
-        service.contactsLookup = contactsLookup
-        service.contactsCache = contactsCache
-        service.ruleCache = ruleCache
-        service.simRegionProvider = simRegionProvider
-        service.settingsRepository = settingsRepository
-        service.recorder = recorder
-        service.clock = clock
-        service.mapper = CallResponseMapper()
         // Unconfined makes serviceScope.launch {} run synchronously on the test thread, so cache
         // warming (onCreate) and event recording become deterministic instead of racing.
-        service.backgroundDispatcher = Dispatchers.Unconfined
+        service = wiredService(Dispatchers.Unconfined, responses)
 
         // Drive warming directly rather than through onCreate(): the Hilt-generated onCreate()
         // performs field injection that needs a bound Application, absent in a plain JVM test.
         service.startCacheWarming()
+    }
+
+    private fun wiredService(
+        dispatcher: CoroutineDispatcher,
+        captured: MutableList<CallResponse>,
+    ): VorwahlGuardScreeningService {
+        val svc = spyk(VorwahlGuardScreeningService())
+        every { svc.respondToCall(any(), capture(captured)) } just Runs
+
+        svc.screenIncomingCall = screenIncomingCall
+        svc.normalizer = normalizer
+        svc.contactsLookup = contactsLookup
+        svc.contactsCache = contactsCache
+        svc.ruleCache = ruleCache
+        svc.simRegionProvider = simRegionProvider
+        svc.settingsRepository = settingsRepository
+        svc.recorder = recorder
+        svc.clock = clock
+        svc.mapper = CallResponseMapper()
+        svc.backgroundDispatcher = dispatcher
+        return svc
     }
 
     private fun callWithHandle(number: String): Call.Details {
@@ -206,6 +215,74 @@ class VorwahlGuardScreeningServiceTest {
         service.onScreenCall(callWithHandle("+4915112345678"))
 
         verify(exactly = 0) { recorder.record(any()) }
+    }
+
+    @Test
+    fun `exception after a matched decision allows the call and records nothing`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(any(), any(), any()) } returns
+            ScreeningDecision(RuleAction.BLOCK, "rule-block")
+        // The decision itself succeeded; only mapping it to a CallResponse blows up. The call
+        // falls open to ALLOW, so recording the BLOCK would assert an action that never happened.
+        service.mapper = mockk()
+        every { service.mapper.toCallResponse(any(), any()) } throws IllegalStateException("boom")
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        assertEquals(1, responses.size)
+        assertFalse(responses.single().disallowCall)
+        assertFalse(responses.single().silenceCall)
+        verify(exactly = 0) { recorder.record(any()) }
+    }
+
+    @Test
+    fun `recording happens only after respondToCall`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(any(), any(), any()) } returns
+            ScreeningDecision(RuleAction.BLOCK, "rule-block")
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        verifyOrder {
+            service.respondToCall(any(), any())
+            recorder.record(any())
+        }
+    }
+
+    @Test
+    fun `a throwing recorder does not disturb the response`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(any(), any(), any()) } returns
+            ScreeningDecision(RuleAction.BLOCK, "rule-block")
+        every { recorder.record(any()) } throws RuntimeException("disk full")
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        assertEquals(1, responses.size)
+        assertEquals(true, responses.single().disallowCall)
+    }
+
+    @Test
+    fun `a call arriving before warming finishes is still answered within the bounded wait`() {
+        // Telecom binds the service because a call is arriving; warming may still be in flight.
+        // Simulate a warm-up that outlives the wait: the call must still get its one response.
+        every { simRegionProvider.refresh() } answers { Thread.sleep(10_000) }
+        val slowResponses = mutableListOf<CallResponse>()
+        val slowService = wiredService(Dispatchers.IO, slowResponses)
+        slowService.startCacheWarming()
+
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(any(), any(), any()) } returns ScreeningDecision.allow()
+
+        slowService.onScreenCall(callWithHandle("+4915112345678"))
+
+        assertEquals(1, slowResponses.size)
+        assertFalse(slowResponses.single().disallowCall)
+        assertFalse(slowResponses.single().silenceCall)
     }
 
     @Test

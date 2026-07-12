@@ -16,6 +16,8 @@ import io.janda.vorwahlguard.domain.port.out.ContactsLookup
 import io.janda.vorwahlguard.domain.port.out.NumberNormalizer
 import io.janda.vorwahlguard.domain.port.out.SettingsRepository
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -26,10 +28,13 @@ import kotlinx.coroutines.launch
 
 /**
  * The screening hot path (CLAUDE.md §3). `onScreenCall()` has a ~5s system-imposed deadline:
- * every port it reads from must already be warmed in memory by [onCreate] — no disk I/O, no
- * Binder IPC, no `runBlocking` on the calling thread. [respondToCall] is invoked exactly once
- * per call, and any exception raised while computing the decision falls through to an allowing
- * [CallScreeningService.CallResponse] rather than preventing (or duplicating) that call.
+ * every port it reads from is served from in-memory caches warmed by [onCreate] — no disk I/O,
+ * no Binder IPC, no `runBlocking` on the calling thread. Telecom binds this service *because* a
+ * call is arriving, so the very first screen may race that warm-up; it waits a bounded
+ * [WARM_TIMEOUT_MS] for the caches and then proceeds with whatever is cached, degrading toward
+ * allow. [respondToCall] is invoked exactly once per call, and any exception raised while
+ * computing the decision falls through to an allowing [CallScreeningService.CallResponse]
+ * rather than preventing (or duplicating) that call.
  */
 @AndroidEntryPoint
 class VorwahlGuardScreeningService : CallScreeningService() {
@@ -53,6 +58,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
     internal var backgroundDispatcher: CoroutineDispatcher = Dispatchers.IO
 
     private lateinit var serviceScope: CoroutineScope
+    private val cachesWarmed = CountDownLatch(1)
 
     override fun onCreate() {
         super.onCreate()
@@ -72,9 +78,15 @@ class VorwahlGuardScreeningService : CallScreeningService() {
     internal fun startCacheWarming() {
         serviceScope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
         serviceScope.launch {
-            simRegionProvider.refresh()
-            ruleCache.refresh()
-            contactsCache.refresh()
+            try {
+                simRegionProvider.refresh()
+                ruleCache.refresh()
+                contactsCache.refresh()
+            } finally {
+                // Opens even when a refresh throws: a failed warm must degrade to "screen with
+                // whatever is cached", not stall every onScreenCall() until the timeout.
+                cachesWarmed.countDown()
+            }
         }
     }
 
@@ -88,6 +100,10 @@ class VorwahlGuardScreeningService : CallScreeningService() {
         var screenedNumber: PhoneNumber? = null
 
         val response = try {
+            // The call that triggered the bind may arrive before startCacheWarming() finished;
+            // a bounded wait keeps it screened without threatening the ~5s deadline.
+            cachesWarmed.await(WARM_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
             // Call.Details.getHandle() is null for a withheld/private caller ID (CLAUDE.md §3
             // rule 2) — never dereference it unguarded.
             val handle = callDetails.handle
@@ -104,9 +120,13 @@ class VorwahlGuardScreeningService : CallScreeningService() {
                 contactsLookup.isKnownContact(number)
 
             val computed = screenIncomingCall.decide(number, isContact, clock.now())
+            val mapped = mapper.toCallResponse(computed.action(), settings.notifyOnBlock())
+            // Committed only once the response is built: a decision whose mapping threw falls
+            // open to ALLOW below, and recording it would claim an action that never happened.
             decision = computed
-            mapper.toCallResponse(computed.action(), settings.notifyOnBlock())
+            mapped
         } catch (t: Throwable) {
+            decision = null
             // Never log the number itself (CLAUDE.md §1, §12) — only the failure shape.
             Log.e(TAG, "onScreenCall decision failed, falling through to allow: ${t.javaClass.simpleName}")
             CallResponse.Builder().build()
@@ -142,6 +162,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
 
     private companion object {
         const val TAG = "VorwahlGuardScreening"
+        const val WARM_TIMEOUT_MS = 1_000L
         const val PRIVATE_NUMBER_PLACEHOLDER = "PRIVATE"
         const val UNKNOWN_REGION_PLACEHOLDER = "UNKNOWN"
     }
