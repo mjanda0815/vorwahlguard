@@ -5,8 +5,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.janda.vorwahlguard.domain.port.`in`.ScreenIncomingCall
+import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.domain.port.out.NumberNormalizer
 import io.janda.vorwahlguard.domain.port.out.RuleRepository
+import io.janda.vorwahlguard.domain.service.LibPhoneNumberCountryCatalog
 import io.janda.vorwahlguard.domain.service.LibPhoneNumberNormalizer
 import io.janda.vorwahlguard.domain.service.ScreenIncomingCallService
 import javax.inject.Singleton
@@ -28,4 +30,8 @@ object DomainModule {
     @Provides
     @Singleton
     fun provideNumberNormalizer(): NumberNormalizer = LibPhoneNumberNormalizer()
+
+    @Provides
+    @Singleton
+    fun provideCountryCatalog(): CountryCatalog = LibPhoneNumberCountryCatalog()
 }

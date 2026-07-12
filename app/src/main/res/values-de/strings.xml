@@ -12,4 +12,30 @@
     <string name="screen_rules_placeholder">Regeln — folgt in Kürze</string>
     <string name="screen_log_placeholder">Protokoll — folgt in Kürze</string>
     <string name="screen_settings_placeholder">Einstellungen — folgt in Kürze</string>
+
+    <!-- Regel anlegen (Issue #6) -->
+    <string name="rules_fab_add">Regel hinzufügen</string>
+    <string name="add_rule_title">Neue Regel</string>
+    <string name="add_rule_tab_country">Land wählen</string>
+    <string name="add_rule_tab_prefix">Vorwahl eingeben</string>
+    <string name="add_rule_search_hint">Land suchen</string>
+    <string name="add_rule_pattern_label">Muster</string>
+    <string name="add_rule_pattern_invalid">Gib ein gültiges Muster ein, z. B. +43663* oder +436631234567</string>
+    <string name="add_rule_pattern_duplicate">Für dieses Muster gibt es bereits eine Regel</string>
+    <string name="add_rule_resulting_pattern">Regel: %1$s</string>
+    <string name="add_rule_collateral_single">Diese Regel gilt auch für %1$s.</string>
+    <plurals name="add_rule_collateral_more">
+        <item quantity="one">Diese Regel gilt auch für %1$s und %2$d weiteres Gebiet.</item>
+        <item quantity="other">Diese Regel gilt auch für %1$s und %2$d weitere Gebiete.</item>
+    </plurals>
+    <string name="add_rule_silence_recommended">Empfohlen für landesweite Regeln: Das Telefon bleibt stumm, der Anruf erscheint aber weiterhin im Protokoll.</string>
+    <string name="action_block">Sperren</string>
+    <string name="action_silence">Lautlos</string>
+    <string name="action_allow">Zulassen</string>
+    <string name="add_rule_test_label">Nummer testen</string>
+    <string name="add_rule_test_invalid">Keine gültige Rufnummer</string>
+    <string name="add_rule_test_draft_match">Diese neue Regel würde greifen: %1$s</string>
+    <string name="add_rule_test_existing_match">Eine bestehende Regel greift bereits: %1$s</string>
+    <string name="add_rule_test_no_match">Keine Regel greift – der Anruf würde zugelassen</string>
+    <string name="add_rule_save">Speichern</string>
 </resources>
