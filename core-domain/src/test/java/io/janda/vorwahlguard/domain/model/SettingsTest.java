@@ -15,4 +15,14 @@ class SettingsTest {
         assertThat(settings.pseudonymiseNumbers()).isFalse();
         assertThat(settings.notifyOnBlock()).isTrue();
     }
+
+    @Test
+    void defaultsAreTheSafestPosture() {
+        Settings settings = Settings.defaults();
+
+        assertThat(settings.contactsBypassEnabled()).isFalse();
+        assertThat(settings.retentionDays()).isEqualTo(90);
+        assertThat(settings.pseudonymiseNumbers()).isFalse();
+        assertThat(settings.notifyOnBlock()).isFalse();
+    }
 }
