@@ -37,7 +37,8 @@ room = "2.8.4"
 libphonenumber = "9.0.34"   # core artifact only — no geocoder/carrier (CLAUDE.md §2)
 
 # --- Testing ---
-junit = "6.1.1"             # JUnit 5 (Jupiter) BOM; baseline Java 17
+junit = "6.1.1"             # JUnit 5 (Jupiter) BOM; baseline Java 17 — :core-domain
+junit4 = "4.13.2"           # Robolectric is a JUnit 4 runner; :app instrumentation-style tests
 assertj = "3.27.7"
 robolectric = "4.16.1"
 mockk = "1.14.11"
@@ -79,6 +80,7 @@ room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 # --- app JVM unit tests (used from M2 onward) ---
+junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 
