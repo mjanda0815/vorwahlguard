@@ -31,6 +31,15 @@ on-device, with a local statistics view showing what it caught.
 - Reserved token `PRIVATE` for withheld caller IDs
 - Rule list showing country **and** prefix side by side, with flag emoji
 - Ambiguity warning when a country code maps to several regions (`+1` → US, CA, +20)
+- Kontakt-Bypass: opt-in setting — calls from numbers stored in the device's contacts always
+  get through, regardless of any blacklist rule. Requires `READ_CONTACTS`; contact data is
+  read on-device only for a yes/no lookup, never persisted, never logged (see §12 privacy
+  posture in `CLAUDE.md`).
+- Whitelist: individual numbers can be exempted from the blacklist independently of any
+  prefix rule. Technically just a `Rule` with `RuleAction.ALLOW` and an `EXACT` pattern — the
+  existing conflict resolution (longest prefix wins, CLAUDE.md §4) already makes an exact
+  match beat any shorter `BLOCK`/`SILENCE` prefix, so no new matching algorithm is needed.
+  The UI groups rules by action so this reads as a distinct "Whitelist" section (see §7).
 - Call event log with timestamp, matched rule, action taken, derived country
 - Dashboard: total screened, last 7/30 days, top countries, top rules
 - Onboarding flow for `ROLE_CALL_SCREENING`
@@ -43,7 +52,8 @@ on-device, with a local statistics view showing what it caught.
 - Cloud sync, shared blocklists, community lists (would require `INTERNET`)
 - SMS filtering
 - Operator/carrier name lookup — requires the libphonenumber `carrier` artifact, several MB
-- Contact-based allowlisting (needs `READ_CONTACTS`; deferred to v1.1 as opt-in)
+- Per-contact rule overrides or contact groups — v1.0 ships only the global
+  "Kontakte immer durchlassen" toggle, not per-contact allow/block choices
 - Play Store publishing (see §9)
 
 ---
@@ -59,6 +69,7 @@ ScreeningDecision  action + matchedRuleId (nullable) ; ALLOW with null rule = "n
 CallEvent          id, occurredAt, numberOrHash, regionCode, matchedRuleId, action
 Country            iso2 + callingCode
 PatternDescription pattern + resolved regions + ambiguous flag   (read model for the UI)
+Settings           contactsBypassEnabled, retentionDays, pseudonymiseNumbers, notifyOnBlock
 ```
 
 ### Ports
@@ -66,13 +77,17 @@ PatternDescription pattern + resolved regions + ambiguous flag   (read model for
 ```java
 // driving (inbound)
 public interface ScreenIncomingCall {
-    ScreeningDecision decide(PhoneNumber number, Instant at);
+    ScreeningDecision decide(PhoneNumber number, boolean isKnownContact, Instant at);
 }
 
 // driven (outbound)
 public interface RuleRepository    { List<Rule> activeRules(); }
 public interface CallEventRecorder { void record(CallEvent event); }
 public interface Clock             { Instant now(); }
+public interface SettingsRepository { Settings current(); }
+// contact membership is a plain boolean lookup — the adapter never hands a raw
+// contact list into core-domain, only the yes/no answer for one number
+public interface ContactsLookup    { boolean isKnownContact(PhoneNumber number); }
 
 // pure, implemented inside core-domain (libphonenumber is plain Java)
 public interface NumberNormalizer  { PhoneNumber normalize(String raw, String defaultRegion); }
@@ -92,6 +107,8 @@ public interface CountryCatalog {
 | `RuleRepository` | `CachedRuleRepository` → in-memory snapshot, invalidated on Room change |
 | `CallEventRecorder` | `RoomCallEventRecorder`, enqueued on a background dispatcher |
 | `Clock` | `SystemClock` |
+| `SettingsRepository` | `DataStoreSettingsRepository`, cached like the rule set |
+| `ContactsLookup` | `ContactsProviderLookup` over `ContactsContract`, only queried when `contactsBypassEnabled` is true; no-op (always `false`) if `READ_CONTACTS` was never granted |
 
 ---
 
@@ -101,10 +118,16 @@ public interface CountryCatalog {
 onScreenCall(details)
   ├─ handle == null ────────────► PhoneNumber.UNKNOWN
   ├─ else normalize(handle, simRegion)
-  ├─ decision = screenIncomingCall.decide(number, now)   [in-memory, < 1 ms]
+  ├─ isContact = settings.contactsBypassEnabled && contactsLookup.isKnownContact(number)
+  │              [in-memory; contacts are not re-queried per call, see open question #6 in §8]
+  ├─ decision = screenIncomingCall.decide(number, isContact, now)   [in-memory, < 1 ms]
   ├─ respondToCall(call, toCallResponse(decision))       [ALWAYS, exactly once]
   └─ if decision.matched → recorder.record(...)          [async, after respond]
 ```
+
+Whitelist entries need no special-case in this flow: an `EXACT` `ALLOW` rule is already the
+longest possible prefix, so the standard conflict resolution (CLAUDE.md §4) picks it over any
+shorter `BLOCK`/`SILENCE` prefix rule for the same number.
 
 Mapping `ScreeningDecision` → `CallResponse`:
 
@@ -158,14 +181,19 @@ Four destinations in a bottom navigation bar:
 
 1. **Übersicht** — hero counter, 30-day sparkline, top 3 countries, top 3 rules. Prominent
    warning card if `ROLE_CALL_SCREENING` is not held.
-2. **Regeln** — list grouped by action, showing country + prefix + action. Swipe to delete,
-   FAB to add. The add sheet has a segmented control: **Land wählen** | **Vorwahl eingeben**.
+2. **Regeln** — list grouped by action, showing country + prefix + action. Rules with action
+   `Zulassen` and an exact pattern are visually grouped as **Whitelist**, everything with
+   `Sperren`/`Lautlos` as **Blacklist** — same underlying `Rule` list, no separate storage.
+   Swipe to delete, FAB to add. The add sheet has a segmented control:
+   **Land wählen** | **Vorwahl eingeben**.
    - *Land wählen*: searchable country list, flag + name + calling code.
    - *Vorwahl eingeben*: free text with live validation against `PatternSyntax` and a
      "Nummer testen" field that runs a number through the current rule set.
    Both paths converge on the same action picker: Sperren / Lautlos / Zulassen.
 3. **Protokoll** — reverse-chronological call events, filterable by action, with an empty state.
-4. **Einstellungen** — role status, notifications, retention, pseudonymisation, about/licenses.
+4. **Einstellungen** — role status, notifications, retention, pseudonymisation, about/licenses,
+   and **Kontakte immer durchlassen** (opt-in, requests `READ_CONTACTS` on first enable, with
+   copy explaining the lookup never leaves the device and is never logged).
 
 Keep it small and quiet. No onboarding carousel, no dashboard gamification.
 
@@ -185,6 +213,12 @@ Keep it small and quiet. No onboarding carousel, no dashboard gamification.
 5. **`getRegionCodesForCountryCode` availability** in the pinned libphonenumber version. If it
    is absent, how is ambiguity derived — a static table, or `getSupportedRegions()` filtered by
    `getCountryCodeForRegion`?
+6. **Kontakt-Bypass vs. explizite Sperren-Regel.** If a number is both a saved contact and
+   matches an explicit `BLOCK` rule, does the contact bypass win unconditionally, or should an
+   explicit rule for that exact number be able to override it? Default assumption: contacts
+   win outright (nobody wants grandma blocked because her number matches a country-wide
+   prefix rule) — but this changes the decision function beyond the pure `Rule` conflict
+   resolution in CLAUDE.md §4, so lock it down with an ADR before `ContactsLookup` ships.
 
 ---
 
@@ -211,15 +245,18 @@ agents; `RuleMatcher` cannot — it depends on all of them.
 
 ### M2 — Screening service
 `VorwahlGuardScreeningService`, `RoleManager` onboarding, in-memory rule cache, manifest
-wiring, the `BLOCK`/`SILENCE`/`ALLOW` response mapping. Manually verifiable: add `+43*` as
+wiring, the `BLOCK`/`SILENCE`/`ALLOW` response mapping. `ContactsLookup` adapter and the
+`READ_CONTACTS` request flow (only triggered when the setting is enabled) land here too —
+resolve open question #6 in §8 with an ADR first. Manually verifiable: add `+43*` as
 Lautlos, call from an Austrian number, the phone stays silent and the call appears in the log.
 
 ### M3 — Persistence
 Room schema, `RuleRepository` and `CallEventRecorder` adapters, migrations, retention purge.
 
 ### M4 — UI
-Rules CRUD with both input paths, country picker, dashboard aggregates, log screen, settings,
-theming, de/en strings. **The four screens are independent — parallelise them.**
+Rules CRUD with both input paths, country picker, Whitelist/Blacklist grouping in the Regeln
+list, dashboard aggregates, log screen, settings (including the "Kontakte immer durchlassen"
+toggle), theming, de/en strings. **The four screens are independent — parallelise them.**
 
 ### M5 — Hardening & release
 Robolectric tests for the service, instrumented Room tests, accessibility pass, `v1.0.0` tag
