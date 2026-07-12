@@ -55,4 +55,17 @@ class PatternTest {
         assertThat(longerPrefix).isGreaterThan(shorterPrefix);
         assertThat(shorterPrefix).isGreaterThan(any);
     }
+
+    @Test
+    void exactStrictlyOutranksSameDigitLengthPrefix() {
+        // "+436631234567*" is a degenerate but grammar-valid PREFIX whose digit string is the
+        // same length as the EXACT pattern for the same number. CLAUDE.md §4 rule 1 says the
+        // exact match is the longest *possible* prefix, so it must strictly outrank a same-
+        // length PREFIX, not merely tie it — a tie would fall through to the RuleAction
+        // tie-break instead of the exact match winning outright.
+        int exact = PatternSyntax.parse("+436631234567").specificity();
+        int sameDigitLengthPrefix = PatternSyntax.parse("+436631234567*").specificity();
+
+        assertThat(exact).isGreaterThan(sameDigitLengthPrefix);
+    }
 }

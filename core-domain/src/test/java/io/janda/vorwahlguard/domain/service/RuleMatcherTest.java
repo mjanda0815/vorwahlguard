@@ -126,4 +126,23 @@ class RuleMatcherTest {
 
         assertThat(decision).isEqualTo(ScreeningDecision.allow());
     }
+
+    @Test
+    void exactRuleWinsOverSameDigitLengthPrefixRegardlessOfAction() {
+        // "+436631234567*" is a degenerate PREFIX whose digit count equals the EXACT
+        // pattern's digit count for the same number. Give the PREFIX rule the
+        // higher-precedence action (ALLOW) and the EXACT rule the lower-precedence one
+        // (BLOCK): if specificity ever tied between them, the RuleAction tie-break would
+        // incorrectly hand this to the ALLOW prefix rule. The EXACT match must win outright
+        // on specificity alone, before any tie-break is even considered (CLAUDE.md §4 rule 1).
+        PhoneNumber number = new PhoneNumber("raw", "+436631234567", "AT");
+        List<Rule> rules = List.of(
+                rule("same-length-prefix", "+436631234567*", RuleAction.ALLOW),
+                rule("exact", "+436631234567", RuleAction.BLOCK));
+
+        ScreeningDecision decision = matcher.match(rules, number);
+
+        assertThat(decision.matchedRuleId()).isEqualTo("exact");
+        assertThat(decision.action()).isEqualTo(RuleAction.BLOCK);
+    }
 }

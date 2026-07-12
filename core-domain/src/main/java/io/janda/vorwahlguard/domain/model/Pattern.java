@@ -61,14 +61,19 @@ public final class Pattern {
      * Ordering key for the CLAUDE.md §4 conflict-resolution rule 1 ("longest matching prefix
      * wins, an exact match is the longest possible prefix"): higher is more specific.
      * EXACT and PREFIX rank by digit count (an exact match's digit count is the full number,
-     * so it is never shorter than any prefix of itself). ANY and PRIVATE — which do not
-     * compete on digit count — both rank lowest; they never compete with each other in
+     * so it is never shorter than any prefix of itself). EXACT gets a further {@code +1} on
+     * top of the digit-count score so that a same-digit-length PREFIX (e.g. the pathological
+     * {@code +436631234567*}, a 15-digit prefix matching one 15-digit number) never ties an
+     * EXACT pattern for the same digits — the exact match must strictly outrank it and win
+     * outright, not fall through to the {@link RuleAction} tie-break. ANY and PRIVATE — which
+     * do not compete on digit count — both rank lowest; they never compete with each other in
      * practice since their match domains ({@link PhoneNumber#isKnown()} vs.
      * {@link PhoneNumber#isUnknown()}) are disjoint.
      */
     public int specificity() {
         return switch (kind) {
-            case EXACT, PREFIX -> digits.length() + 1;
+            case EXACT -> digits.length() + 2;
+            case PREFIX -> digits.length() + 1;
             case ANY, PRIVATE -> 0;
         };
     }
