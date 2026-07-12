@@ -26,14 +26,10 @@ public record Country(String iso2, int callingCode) {
     /**
      * Localized display name via {@link Locale}, never a hardcoded country list.
      *
-     * <p>CLAUDE.md §6 specifies {@code Locale.of("", iso2)} — that factory method is Java 19+
-     * and does not exist on the JDK 17 baseline this module builds with (CLAUDE.md §2
-     * pins JDK 17 "not 21, not 25"; confirmed by {@code javap java.util.Locale} against the
-     * installed Temurin 17.0.19: no {@code of(...)} method). This uses the two-arg
-     * {@link Locale#Locale(String, String)} constructor instead, which is not deprecated on
-     * Java 17 and produces the identical {@code Locale}. Flagged here per CLAUDE.md §10
-     * ("if something in this file contradicts reality ... say so") rather than silently
-     * diverging from the spec text.
+     * <p>Uses the two-arg {@link Locale#Locale(String, String)} constructor per CLAUDE.md §6:
+     * {@code Locale.of(...)} is Java 19+ and does not exist on the JDK 17 baseline this module
+     * builds with, while the two-arg constructor is not deprecated on 17 and produces the
+     * identical {@code Locale}.
      */
     @SuppressWarnings("deprecation")
     public String displayName(Locale locale) {

@@ -128,7 +128,9 @@ case, it is the common case:
 Consequences that must be implemented, not commented away:
 
 - When a rule is created from the country picker, show the resulting pattern **and** every
-  other region it will also block. „+1* sperrt auch Kanada und 20 weitere Gebiete."
+  other region it will also affect. „Diese Regel gilt auch für Kanada und 20 weitere Gebiete."
+  (Action-neutral copy on purpose: §5 preselects *Lautlos* for bare country rules, so „sperrt"
+  would be wrong exactly when the recommendation applies.)
 - When a rule is *displayed*, resolve the pattern back to a country only if the mapping is
   unambiguous. Otherwise show the code and the region count.
 - `CountryCatalog` lives in `:core-domain` and wraps `PhoneNumberUtil.getCountryCodeForRegion`
