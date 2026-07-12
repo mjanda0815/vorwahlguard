@@ -85,6 +85,13 @@ public final class PatternSyntax {
                 return null;
             }
         }
+        // No real E.164 calling code starts with '0' (CLAUDE.md §4: a wildcard-free pattern
+        // must be a syntactically valid E.164 number). The leading digit right after '+' is
+        // a calling-code digit for both EXACT and PREFIX — a prefix like "+0*" is held to the
+        // same rule, since it can never resolve to a real country either.
+        if (digitsPart.charAt(0) == '0') {
+            return null;
+        }
         return kind;
     }
 }

@@ -63,6 +63,19 @@ class PatternSyntaxTest {
     }
 
     @Test
+    void wildcardFreePatternWithLeadingZeroIsInvalid() {
+        // No real E.164 calling code starts with '0' (CLAUDE.md §4).
+        assertThat(PatternSyntax.isValid("+0123456")).isFalse();
+    }
+
+    @Test
+    void prefixPatternWithLeadingZeroIsInvalid() {
+        // The leading digit of a PREFIX pattern is still a calling-code digit and must be
+        // held to the same "no leading zero" rule as an EXACT pattern.
+        assertThat(PatternSyntax.isValid("+0*")).isFalse();
+    }
+
+    @Test
     void reservedPrivateTokenIsValid() {
         assertThat(PatternSyntax.isValid("PRIVATE")).isTrue();
         assertThat(PatternSyntax.parse("PRIVATE").kind()).isEqualTo(PatternKind.PRIVATE);
