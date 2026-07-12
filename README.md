@@ -93,7 +93,7 @@ This is the whole point, so it is enforced structurally rather than promised in 
 | Data leaving the device | None. There is no code path that could send it. |
 | Third-party SDKs | None. |
 | Country names and flags | Derived from `Locale` and computed Unicode codepoints. No downloads, no assets. |
-| Number retention | Local SQLite, 90 days by default, user-configurable, optionally hashed. |
+| Number retention | Local SQLite, 90 days by default. Expired entries are purged automatically whenever the app or the screening service starts. Optionally numbers are stored as salted hashes instead — statistics still work; the toggle for this arrives with the settings screen. |
 
 Verify it yourself: `app/src/main/AndroidManifest.xml` is short and has no
 `android.permission.INTERNET`.
@@ -176,9 +176,9 @@ Git Flow, feature branches, Conventional Commits. See [`CONTRIBUTING.md`](CONTRI
 
 ## Roadmap
 
-- [ ] M0 — project skeleton, CI
-- [ ] M1 — domain core, fully unit-tested
-- [ ] M2 — screening service + role onboarding
+- [x] M0 — project skeleton, CI
+- [x] M1 — domain core, fully unit-tested
+- [x] M2 — screening service + role onboarding
 - [ ] M3 — Room persistence, retention purge
 - [ ] M4 — Compose UI, country picker, de/en localisation
 - [ ] M5 — hardening, `v1.0.0` release

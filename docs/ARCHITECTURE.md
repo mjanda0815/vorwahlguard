@@ -42,7 +42,9 @@ substitute them and so a future replacement does not ripple into `:app`.
 |---|---|---|
 | `ScreenIncomingCall` | driving | `VorwahlGuardScreeningService` (`:app`) |
 | `RuleRepository` | driven | `CachedRuleRepository` over `RuleDao` (`:app`) |
-| `CallEventRecorder` | driven | `RoomCallEventRecorder`, async (`:app`) |
+| `CallEventRecorder` | driven | `RoomCallEventRecorder`, async on an application-scoped scope (`:app`) |
+| `SettingsRepository` | driven | `CachedSettingsRepository` over `SettingsStore` (DataStore) (`:app`) |
+| `ContactsLookup` | driven | `CachedContactsLookup` over `ContactsContract` (`:app`) |
 | `Clock` | driven | `SystemClock` (`:app`) |
 | `NumberNormalizer` | driven | `LibPhoneNumberNormalizer` (`:core-domain`) |
 | `CountryCatalog` | driven | `LibPhoneNumberCountryCatalog` (`:core-domain`) |
@@ -117,4 +119,8 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
   `getRegionCodesForCountryCode` directly, confirmed present via `javap` against the pinned jar
 - [`0009`](adr/0009-sim-region-fallback-chain.md) — SIM-region fallback chain for number
   normalization: SIM → network → `Locale`, no new permission needed
+- [`0010`](adr/0010-pseudonymisation-salted-sha256.md) — Pseudonymisation via salted SHA-256,
+  salt in DataStore, per-row `is_hashed` flag
+- [`0011`](adr/0011-opportunistic-retention-purge.md) — Retention purge runs opportunistically
+  in-process; WorkManager rejected over its merged manifest permissions
 - *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?
