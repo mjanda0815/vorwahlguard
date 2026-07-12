@@ -132,15 +132,15 @@ Consequences that must be implemented, not commented away:
 - When a rule is *displayed*, resolve the pattern back to a country only if the mapping is
   unambiguous. Otherwise show the code and the region count.
 - `CountryCatalog` lives in `:core-domain` and wraps `PhoneNumberUtil.getCountryCodeForRegion`
-  (confirmed present — `SmokeTest` already calls it). `getRegionCodesForCountryCode` appears
-  absent from the pinned libphonenumber version (source search only, confirm by compile attempt
-  before relying on it — see ADR 0007); if absent, derive the 1:n mapping instead from
-  `getSupportedRegions()` filtered by `getCountryCodeForRegion(region) == callingCode`, cached
-  once rather than rescanned per lookup.
+  and `getRegionCodesForCountryCode` — both confirmed present in the pinned libphonenumber
+  version via `javap` against the resolved jar (ADR 0008). Cache the calling-code → region-list
+  mapping once rather than rescanning per lookup.
 - Flag emoji are **computed**, not shipped as assets: `0x1F1E6 + (isoChar - 'A')` for both
   letters of the ISO-3166 alpha-2 code. No image files, no network, works offline.
-- Country display names come from `Locale.of("", iso2).getDisplayCountry(userLocale)`.
-  Do not hardcode a country list.
+- Country display names come from `new Locale("", iso2).getDisplayCountry(userLocale)`.
+  `Locale.of(String, String)` is Java 19+ and does not exist on JDK 17 (confirmed via
+  `javap java.util.Locale` against the installed Temurin 17) — use the two-arg constructor,
+  which is not deprecated on 17. Do not hardcode a country list.
 
 ---
 

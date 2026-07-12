@@ -111,6 +111,8 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
 - `0005` — Country codes resolve 1:n; the UI names the collateral before a rule is saved
 - [`0006`](adr/0006-contacts-bypass-unconditional-priority.md) — Contacts-bypass has
   unconditional priority over explicit `BLOCK` rules
-- [`0007`](adr/0007-country-catalog-ambiguity-without-plural-api.md) — `CountryCatalog` derives
-  ambiguity via `getSupportedRegions()`, since `getRegionCodesForCountryCode` does not exist
+- ~~[`0007`](adr/0007-country-catalog-ambiguity-without-plural-api.md)~~ — superseded by `0008`;
+  its premise (`getRegionCodesForCountryCode` absent) was wrong
+- [`0008`](adr/0008-country-catalog-uses-plural-api-directly.md) — `CountryCatalog` wraps
+  `getRegionCodesForCountryCode` directly, confirmed present via `javap` against the pinned jar
 - *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?
