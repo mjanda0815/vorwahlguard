@@ -109,4 +109,8 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
 - `0003` — No `INTERNET` permission, ever
 - `0004` — Prefix grammar with a single trailing wildcard, no regex
 - `0005` — Country codes resolve 1:n; the UI names the collateral before a rule is saved
+- [`0006`](adr/0006-contacts-bypass-unconditional-priority.md) — Contacts-bypass has
+  unconditional priority over explicit `BLOCK` rules
+- [`0007`](adr/0007-country-catalog-ambiguity-without-plural-api.md) — `CountryCatalog` derives
+  ambiguity via `getSupportedRegions()`, since `getRegionCodesForCountryCode` does not exist
 - *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?

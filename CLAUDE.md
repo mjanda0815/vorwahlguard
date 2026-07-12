@@ -131,10 +131,11 @@ Consequences that must be implemented, not commented away:
   other region it will also block. „+1* sperrt auch Kanada und 20 weitere Gebiete."
 - When a rule is *displayed*, resolve the pattern back to a country only if the mapping is
   unambiguous. Otherwise show the code and the region count.
-- `CountryCatalog` lives in `:core-domain` and wraps `PhoneNumberUtil.getCountryCodeForRegion`
-  and `getRegionCodesForCountryCode`. Verify the latter exists in the pinned libphonenumber
-  version before relying on it; if not, `getRegionCodeForCountryCode` returns only the main
-  region and the ambiguity must be derived another way.
+- `CountryCatalog` lives in `:core-domain` and wraps `PhoneNumberUtil`. `getRegionCodesForCountryCode`
+  does not exist in the pinned libphonenumber version (verified against the library source —
+  see ADR 0007); derive the 1:n mapping instead from `getSupportedRegions()` filtered by
+  `getCountryCodeForValidRegion(region) == callingCode`, cached once rather than rescanned per
+  lookup.
 - Flag emoji are **computed**, not shipped as assets: `0x1F1E6 + (isoChar - 'A')` for both
   letters of the ISO-3166 alpha-2 code. No image files, no network, works offline.
 - Country display names come from `Locale.of("", iso2).getDisplayCountry(userLocale)`.
