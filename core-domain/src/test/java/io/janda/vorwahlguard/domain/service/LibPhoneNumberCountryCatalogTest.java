@@ -80,6 +80,32 @@ class LibPhoneNumberCountryCatalogTest {
     }
 
     @Test
+    void describeExactAustrianNumberResolvesToSingleRegion() {
+        Pattern pattern = PatternSyntax.parse("+436631234567");
+
+        PatternDescription description = catalog.describe(pattern);
+
+        assertThat(description.ambiguous()).isFalse();
+        assertThat(description.countries()).hasSize(1);
+        assertThat(description.countries().get(0).iso2()).isEqualTo("AT");
+        assertThat(description.countries().get(0).callingCode()).isEqualTo(43);
+    }
+
+    @Test
+    void describeExactNumberWithSharedCallingCodeResolvesToOneRegionNotWholeGroup() {
+        // describePlusOnePrefixIsAmbiguous (above) shows the bare +1* PREFIX is ambiguous
+        // across 20+ regions — but one specific EXACT number under +1 must resolve to exactly
+        // the single region it actually belongs to, not the whole calling-code group.
+        Pattern pattern = PatternSyntax.parse("+14165551234"); // Toronto, ON area code
+
+        PatternDescription description = catalog.describe(pattern);
+
+        assertThat(description.ambiguous()).isFalse();
+        assertThat(description.countries()).hasSize(1);
+        assertThat(description.countries().get(0).iso2()).isEqualTo("CA");
+    }
+
+    @Test
     void describePrivateResolvesToNoRegions() {
         PatternDescription description = catalog.describe(PatternSyntax.parse("PRIVATE"));
 

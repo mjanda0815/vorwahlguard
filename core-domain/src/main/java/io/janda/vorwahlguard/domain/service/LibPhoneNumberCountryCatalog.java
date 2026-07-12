@@ -1,5 +1,6 @@
 package io.janda.vorwahlguard.domain.service;
 
+import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import io.janda.vorwahlguard.domain.model.Country;
 import io.janda.vorwahlguard.domain.model.Pattern;
@@ -70,7 +71,37 @@ public final class LibPhoneNumberCountryCatalog implements CountryCatalog {
         if (pattern.kind() == PatternKind.ANY || pattern.kind() == PatternKind.PRIVATE) {
             return new PatternDescription(pattern, List.of(), false);
         }
+        if (pattern.kind() == PatternKind.EXACT) {
+            return describeExact(pattern);
+        }
+        return describeCallingCodeGroup(pattern);
+    }
 
+    /**
+     * An EXACT pattern is one specific number, not a calling-code group: it resolves to at
+     * most one region, never to the whole {@code regionsFor(callingCode)} set. Uses
+     * libphonenumber's number-level {@link PhoneNumberUtil#getRegionCodeForNumber} rather than
+     * the calling-code-prefix heuristic {@link #extractCallingCode(String)} uses, since a
+     * single number (unlike a bare prefix) can be parsed and attributed unambiguously.
+     */
+    private PatternDescription describeExact(Pattern pattern) {
+        try {
+            com.google.i18n.phonenumbers.Phonenumber.PhoneNumber parsed =
+                    phoneNumberUtil.parse(pattern.text(), null);
+            String region = phoneNumberUtil.getRegionCodeForNumber(parsed);
+            if (region == null) {
+                // No single region for this exact number (e.g. a non-geographic calling
+                // code) — fall back to describing it by its calling-code group.
+                return describeCallingCodeGroup(pattern);
+            }
+            Country country = new Country(region, parsed.getCountryCode());
+            return new PatternDescription(pattern, List.of(country), false);
+        } catch (NumberParseException e) {
+            return describeCallingCodeGroup(pattern);
+        }
+    }
+
+    private PatternDescription describeCallingCodeGroup(Pattern pattern) {
         int callingCode = extractCallingCode(pattern.digits());
         if (callingCode <= 0) {
             return new PatternDescription(pattern, List.of(), false);
