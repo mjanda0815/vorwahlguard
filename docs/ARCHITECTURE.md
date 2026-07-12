@@ -115,4 +115,6 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
   its premise (`getRegionCodesForCountryCode` absent) was wrong
 - [`0008`](adr/0008-country-catalog-uses-plural-api-directly.md) — `CountryCatalog` wraps
   `getRegionCodesForCountryCode` directly, confirmed present via `javap` against the pinned jar
+- [`0009`](adr/0009-sim-region-fallback-chain.md) — SIM-region fallback chain for number
+  normalization: SIM → network → `Locale`, no new permission needed
 - *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?
