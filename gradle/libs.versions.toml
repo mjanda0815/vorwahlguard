@@ -32,6 +32,7 @@ hiltNavigationCompose = "1.4.0"
 # --- DI / persistence ---
 hilt = "2.59.2"
 room = "2.8.4"
+datastore = "1.2.1"
 
 # --- Domain ---
 libphonenumber = "9.0.34"   # core artifact only — no geocoder/carrier (CLAUDE.md §2)
@@ -79,6 +80,9 @@ room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
+# --- DataStore ---
+androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+
 # --- app JVM unit tests (used from M2 onward) ---
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
@@ -94,3 +98,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+androidx-room = { id = "androidx.room", version.ref = "room" }

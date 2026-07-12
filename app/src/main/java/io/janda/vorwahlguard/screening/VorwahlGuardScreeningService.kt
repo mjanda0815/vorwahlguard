@@ -5,7 +5,9 @@ import android.telecom.CallScreeningService
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import io.janda.vorwahlguard.data.contacts.CachedContactsLookup
+import io.janda.vorwahlguard.data.events.RetentionPurger
 import io.janda.vorwahlguard.data.rules.CachedRuleRepository
+import io.janda.vorwahlguard.data.settings.CachedSettingsRepository
 import io.janda.vorwahlguard.domain.model.CallEvent
 import io.janda.vorwahlguard.domain.model.PhoneNumber
 import io.janda.vorwahlguard.domain.model.ScreeningDecision
@@ -14,11 +16,11 @@ import io.janda.vorwahlguard.domain.port.out.CallEventRecorder
 import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.ContactsLookup
 import io.janda.vorwahlguard.domain.port.out.NumberNormalizer
-import io.janda.vorwahlguard.domain.port.out.SettingsRepository
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +37,12 @@ import kotlinx.coroutines.launch
  * allow. [respondToCall] is invoked exactly once per call, and any exception raised while
  * computing the decision falls through to an allowing [CallScreeningService.CallResponse]
  * rather than preventing (or duplicating) that call.
+ *
+ * Past the initial warm, the rule and settings caches are kept current by observing their
+ * Room/DataStore sources for the lifetime of the service ([CachedRuleRepository.observeAndCache],
+ * [CachedSettingsRepository.observeAndCache]) and a retention purge runs once per bind
+ * ([RetentionPurger.purge]) — none of these hold [cachesWarmed] open; they are fire-and-forget
+ * jobs started once the latch has already been released.
  */
 @AndroidEntryPoint
 class VorwahlGuardScreeningService : CallScreeningService() {
@@ -45,8 +53,9 @@ class VorwahlGuardScreeningService : CallScreeningService() {
     @Inject lateinit var contactsCache: CachedContactsLookup
     @Inject lateinit var ruleCache: CachedRuleRepository
     @Inject lateinit var simRegionProvider: SimRegionProvider
-    @Inject lateinit var settingsRepository: SettingsRepository
+    @Inject lateinit var settingsCache: CachedSettingsRepository
     @Inject lateinit var recorder: CallEventRecorder
+    @Inject lateinit var purger: RetentionPurger
     @Inject lateinit var clock: Clock
     @Inject lateinit var mapper: CallResponseMapper
 
@@ -71,6 +80,10 @@ class VorwahlGuardScreeningService : CallScreeningService() {
      * this is the only place these caches get warmed. Region must be refreshed before contacts,
      * since contact-number normalization depends on it.
      *
+     * Once the latch opens, [ruleCache] and [settingsCache] switch to observing their persistent
+     * source for the rest of the service's lifetime, and a retention purge runs once — all three
+     * as separate jobs that must never hold [cachesWarmed] open themselves.
+     *
      * Split out from [onCreate] so unit tests can drive warming directly: the Hilt-generated
      * `onCreate()` performs field injection that needs a bound `Application`, which a plain JVM
      * test does not have. Production only ever reaches this via [onCreate].
@@ -79,14 +92,38 @@ class VorwahlGuardScreeningService : CallScreeningService() {
         serviceScope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
         serviceScope.launch {
             try {
-                simRegionProvider.refresh()
-                ruleCache.refresh()
-                contactsCache.refresh()
+                // Each step individually guarded: these now do real I/O (Room, DataStore,
+                // ContentResolver), and one failing must neither skip the remaining steps nor
+                // escape the coroutine — an unhandled exception here kills the process
+                // mid-incoming-call, the worst failure mode (CLAUDE.md §3 rule 3).
+                guarded("warm region") { simRegionProvider.refresh() }
+                guarded("warm settings") { settingsCache.refresh() }
+                guarded("warm rules") { ruleCache.refresh() }
+                guarded("warm contacts") { contactsCache.refresh() }
             } finally {
-                // Opens even when a refresh throws: a failed warm must degrade to "screen with
+                // Opens even on cancellation: a failed warm must degrade to "screen with
                 // whatever is cached", not stall every onScreenCall() until the timeout.
                 cachesWarmed.countDown()
             }
+
+            // Only after the latch is open (ADR 0011): keep the caches current for the rest of
+            // the service's life and run housekeeping. Individually guarded for the same reason
+            // as the warm steps.
+            launch { guarded("observe rules") { ruleCache.observeAndCache() } }
+            launch { guarded("observe settings") { settingsCache.observeAndCache() } }
+            launch { guarded("retention purge") { purger.purge() } }
+        }
+    }
+
+    /** Contains [block]'s failure to a log line; cancellation still propagates. */
+    private suspend fun guarded(what: String, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (t: Throwable) {
+            // Never the number, never the message — only the failure shape (CLAUDE.md §1, §12).
+            Log.e(TAG, "$what failed: ${t.javaClass.simpleName}")
         }
     }
 
@@ -114,7 +151,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
             }
             screenedNumber = number
 
-            val settings = settingsRepository.current()
+            val settings = settingsCache.current()
             val isContact = settings.contactsBypassEnabled() &&
                 number.isKnown() &&
                 contactsLookup.isKnownContact(number)
@@ -136,26 +173,26 @@ class VorwahlGuardScreeningService : CallScreeningService() {
         // (CLAUDE.md §3 rule 3).
         respondToCall(callDetails, response)
 
-        // Recording is fire-and-forget and only happens after respondToCall() has already been
-        // invoked (CLAUDE.md §3 rule 1, docs/ARCHITECTURE.md), and only for a decision a rule
-        // actually fired for — a contact bypass or a "no match" allow records nothing (ADR
-        // 0006, CLAUDE.md §4 rule 3).
+        // Recording only happens after respondToCall() has already been invoked (CLAUDE.md §3
+        // rule 1, docs/ARCHITECTURE.md), and only for a decision a rule actually fired for — a
+        // contact bypass or a "no match" allow records nothing (ADR 0006, CLAUDE.md §4 rule 3).
+        // recorder.record() is itself fire-and-forget on the app's own [io.janda.vorwahlguard.di.ApplicationScope]
+        // (RoomCallEventRecorder does zero I/O on the calling thread), so this call is direct —
+        // no separate serviceScope.launch wrapper needed here.
         val finalDecision = decision
         val finalNumber = screenedNumber
         if (finalDecision != null && finalDecision.matched() && finalNumber != null) {
-            serviceScope.launch {
-                runCatching {
-                    recorder.record(
-                        CallEvent(
-                            UUID.randomUUID().toString(),
-                            clock.now(),
-                            finalNumber.e164() ?: PRIVATE_NUMBER_PLACEHOLDER,
-                            finalNumber.region() ?: UNKNOWN_REGION_PLACEHOLDER,
-                            finalDecision.matchedRuleId(),
-                            finalDecision.action(),
-                        ),
-                    )
-                }
+            runCatching {
+                recorder.record(
+                    CallEvent(
+                        UUID.randomUUID().toString(),
+                        clock.now(),
+                        finalNumber.e164() ?: PRIVATE_NUMBER_PLACEHOLDER,
+                        finalNumber.region() ?: UNKNOWN_REGION_PLACEHOLDER,
+                        finalDecision.matchedRuleId(),
+                        finalDecision.action(),
+                    ),
+                )
             }
         }
     }

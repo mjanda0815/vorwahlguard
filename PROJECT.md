@@ -107,7 +107,7 @@ public interface CountryCatalog {
 | `RuleRepository` | `CachedRuleRepository` → in-memory snapshot, invalidated on Room change |
 | `CallEventRecorder` | `RoomCallEventRecorder`, enqueued on a background dispatcher |
 | `Clock` | `SystemClock` |
-| `SettingsRepository` | `DataStoreSettingsRepository`, cached like the rule set |
+| `SettingsRepository` | `CachedSettingsRepository` (hot-path-safe in-memory cache) over `SettingsStore` (DataStore) |
 | `ContactsLookup` | `ContactsProviderLookup` over `ContactsContract`, only queried when `contactsBypassEnabled` is true; no-op (always `false`) if `READ_CONTACTS` was never granted |
 
 ---
@@ -251,7 +251,8 @@ resolve open question #6 in §8 with an ADR first. Manually verifiable: add `+43
 Lautlos, call from an Austrian number, the phone stays silent and the call appears in the log.
 
 ### M3 — Persistence
-Room schema, `RuleRepository` and `CallEventRecorder` adapters, migrations, retention purge.
+Room schema, `RuleRepository` and `CallEventRecorder` adapters, migrations, retention purge,
+settings persistence (DataStore) behind a hot-path cache.
 
 ### M4 — UI
 Rules CRUD with both input paths, country picker, Whitelist/Blacklist grouping in the Regeln
