@@ -73,6 +73,9 @@ exception has unconditional priority: it is checked before your rules are consul
 ## Features
 
 - **Country picker and free-text prefixes** — both produce the same kind of rule
+- **Whitelist/Blacklist at a glance** — the Regeln list groups exact `Zulassen` entries as a
+  Whitelist and everything else as a Blacklist, same underlying rules, no separate storage;
+  swipe a rule to delete it
 - **Withheld numbers** — a dedicated `PRIVATE` token for calls with no caller ID
 - **Contacts whitelist** — optionally exempt everyone in your address book from every blocking
   rule, evaluated locally with unconditional priority
