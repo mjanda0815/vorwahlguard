@@ -207,8 +207,12 @@ gh pr create --base develop --fill
 Subject in English, imperative, ≤ 72 chars. No emoji. No `Co-Authored-By` trailers,
 no "Generated with Claude Code" footers.
 
-Ask before: `git push`, `gh pr merge`, `gh release create`, anything touching
-`.github/workflows/`.
+`git push`, `gh pr create` and `gh pr merge` do not require asking first — the safety net is
+`.claude/settings.json`'s `deny` list (force-push, `rm -rf`) plus this file's hard rules below,
+not a confirmation prompt on every push. Still ask before: `gh release create`, `gh repo`
+(anything that touches the repository itself, not a branch), anything touching
+`.github/workflows/`, or `app/src/main/AndroidManifest.xml` (a new permission needs explicit
+approval per §9 regardless of this file's Bash-level allowances).
 
 ---
 
