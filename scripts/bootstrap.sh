@@ -122,6 +122,24 @@ reimplement it), plus a 'Nummer testen' field that runs a number through the cur
 Both paths converge on the action picker: Sperren / Lautlos / Zulassen. For a bare +XX* rule,
 preselect Lautlos and explain why."
 
+gh issue create --title "Release signing, R8 verification and WSL device deployment" --label "M5" --body \
+"Adapt the project's docs and permission config to support a signed release build and on-device
+deployment from WSL2. Supporting docs already exist: \`docs/RELEASE.md\`, \`docs/WSL-ADB.md\`,
+\`scripts/adb-env.sh\`, \`.claude/commands/deploy.md\`.
+
+Scope (docs + config only, no app code):
+- CLAUDE.md: new section on release & deployment (keystore/credentials off-limits, optional
+  signingConfig, R8/libphonenumber caveat, signature-change reinstall revoking
+  ROLE_CALL_SCREENING, WSL adb guidance, /deploy).
+- .claude/settings.json: allow read-only adb/verify commands, ask for stateful adb, deny
+  keytool/apksigner-sign and reads of signing credentials.
+- .gitignore: ignore *.p12.
+- README.md: link the two new docs.
+- scripts/bootstrap.sh: add the M5 issue so a fresh bootstrap is consistent.
+
+The R8 release path itself (isMinifyEnabled=true, proguard rules, apksigner verification on a
+real device) is executed in M5 proper; this issue lands the guardrails and documentation."
+
 echo
 echo "Done. Next:"
 echo "  claude          # settings.json already selects the opusplan model"

@@ -173,6 +173,12 @@ already been sent.
 Everything else in the codebase follows from that, and from one rule: **if anything throws, the
 call is allowed.** A screener that swallows a real call is worse than no screener at all.
 
+## Release & deployment
+
+Signing a release build, R8/libphonenumber caveats, and shipping a GitHub Release:
+[`docs/RELEASE.md`](docs/RELEASE.md). Deploying to a physical device from WSL2 (no USB
+passthrough by default): [`docs/WSL-ADB.md`](docs/WSL-ADB.md).
+
 ## Contributing
 
 Git Flow, feature branches, Conventional Commits. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
