@@ -50,4 +50,12 @@
         <item quantity="one">%1$d Gebiet</item>
         <item quantity="other">%1$d Gebiete</item>
     </plurals>
+
+    <!-- Protokoll (Issue #25) -->
+    <string name="log_filter_all">Alle</string>
+    <string name="log_empty_title">Noch keine erfassten Anrufe</string>
+    <string name="log_empty_body">Gesperrte und stummgeschaltete Anrufe erscheinen hier.</string>
+    <string name="log_empty_filtered_title">Keine Anrufe für diesen Filter</string>
+    <string name="log_empty_filtered_body">Kein erfasster Anruf entspricht der gewählten Aktion.</string>
+    <string name="log_region_unknown">Unbekanntes Gebiet</string>
 </resources>

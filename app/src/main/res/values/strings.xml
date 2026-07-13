@@ -52,4 +52,12 @@
         <item quantity="one">%1$d region</item>
         <item quantity="other">%1$d regions</item>
     </plurals>
+
+    <!-- Protokoll (issue #25) -->
+    <string name="log_filter_all">All</string>
+    <string name="log_empty_title">No screened calls yet</string>
+    <string name="log_empty_body">Blocked and silenced calls appear here.</string>
+    <string name="log_empty_filtered_title">No calls for this filter</string>
+    <string name="log_empty_filtered_body">No screened call matches the selected action.</string>
+    <string name="log_region_unknown">Unknown region</string>
 </resources>
