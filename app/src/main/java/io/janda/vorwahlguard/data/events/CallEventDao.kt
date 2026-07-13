@@ -16,4 +16,27 @@ interface CallEventDao {
 
     @Query("SELECT * FROM call_events ORDER BY occurred_at DESC")
     fun observeNewestFirst(): Flow<List<CallEventEntity>>
+
+    /** UI-only read (`UebersichtScreen`'s hero counter) — never called on the `onScreenCall()` hot path. */
+    @Query("SELECT COUNT(*) FROM call_events")
+    fun observeTotalCount(): Flow<Int>
+
+    /** UI-only read (`UebersichtScreen`'s sparkline) — never called on the `onScreenCall()` hot path. */
+    @Query("SELECT occurred_at FROM call_events WHERE occurred_at >= :sinceEpochMillis")
+    fun observeOccurredAtSince(sinceEpochMillis: Long): Flow<List<Long>>
+
+    /** UI-only read (`UebersichtScreen`'s top-countries list) — never called on the `onScreenCall()` hot path. */
+    @Query(
+        "SELECT region_code AS regionCode, COUNT(*) AS count FROM call_events " +
+            "WHERE region_code != :unknownRegionCode GROUP BY region_code " +
+            "ORDER BY count DESC, region_code ASC LIMIT 3",
+    )
+    fun observeTopRegions(unknownRegionCode: String = UNKNOWN_REGION_CODE): Flow<List<RegionCount>>
+
+    /** UI-only read (`UebersichtScreen`'s top-rules list) — never called on the `onScreenCall()` hot path. */
+    @Query(
+        "SELECT matched_rule_id AS ruleId, COUNT(*) AS count FROM call_events " +
+            "GROUP BY matched_rule_id ORDER BY count DESC, matched_rule_id ASC LIMIT 3",
+    )
+    fun observeTopRules(): Flow<List<RuleIdCount>>
 }
