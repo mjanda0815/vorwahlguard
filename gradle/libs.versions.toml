@@ -43,6 +43,9 @@ junit4 = "4.13.2"           # Robolectric is a JUnit 4 runner; :app instrumentat
 assertj = "3.27.7"
 robolectric = "4.16.1"
 mockk = "1.14.11"
+# Matches the kotlinx-coroutines-core version resolved transitively on :app's runtime
+# classpath (via lifecycle/room), verified with `./gradlew :app:dependencies`.
+kotlinxCoroutinesTest = "1.9.0"
 
 [libraries]
 # --- Domain ---
@@ -69,6 +72,8 @@ compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
 # --- Hilt ---
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
@@ -87,6 +92,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 junit4 = { group = "junit", name = "junit", version.ref = "junit4" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
 
 [bundles]
 compose = ["compose-ui", "compose-ui-graphics", "compose-ui-tooling-preview", "compose-material3", "compose-material-icons-core"]

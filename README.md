@@ -179,7 +179,7 @@ Git Flow, feature branches, Conventional Commits. See [`CONTRIBUTING.md`](CONTRI
 - [x] M0 — project skeleton, CI
 - [x] M1 — domain core, fully unit-tested
 - [x] M2 — screening service + role onboarding
-- [ ] M3 — Room persistence, retention purge
+- [x] M3 — Room persistence, retention purge
 - [ ] M4 — Compose UI, country picker, de/en localisation
 - [ ] M5 — hardening, `v1.0.0` release
 - [ ] v1.1 — opt-in contact allowlisting, import/export of rules

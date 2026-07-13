@@ -108,7 +108,7 @@ public interface CountryCatalog {
 | `CallEventRecorder` | `RoomCallEventRecorder`, enqueued on a background dispatcher |
 | `Clock` | `SystemClock` |
 | `SettingsRepository` | `CachedSettingsRepository` (hot-path-safe in-memory cache) over `SettingsStore` (DataStore) |
-| `ContactsLookup` | `ContactsProviderLookup` over `ContactsContract`, only queried when `contactsBypassEnabled` is true; no-op (always `false`) if `READ_CONTACTS` was never granted |
+| `ContactsLookup` | `CachedContactsLookup` over `ContactsContract`, only queried when `contactsBypassEnabled` is true; no-op (always `false`) if `READ_CONTACTS` was never granted |
 
 ---
 
@@ -157,7 +157,7 @@ created and, if the calling code is shared, name the collateral:
 
 ```
 🇺🇸 Vereinigte Staaten  →  +1*
-⚠ Diese Regel sperrt auch Kanada und 20 weitere Gebiete mit der Vorwahl +1.
+⚠ Diese Regel gilt auch für Kanada und 20 weitere Gebiete mit der Vorwahl +1.
 ```
 
 **Displaying a rule.** Resolve back to a country only when unambiguous:
@@ -245,9 +245,10 @@ agents; `RuleMatcher` cannot — it depends on all of them.
 
 ### M2 — Screening service
 `VorwahlGuardScreeningService`, `RoleManager` onboarding, in-memory rule cache, manifest
-wiring, the `BLOCK`/`SILENCE`/`ALLOW` response mapping. `ContactsLookup` adapter and the
-`READ_CONTACTS` request flow (only triggered when the setting is enabled) land here too —
-resolve open question #6 in §8 with an ADR first. Manually verifiable: add `+43*` as
+wiring, the `BLOCK`/`SILENCE`/`ALLOW` response mapping. The `ContactsLookup` adapter landed
+here fail-closed (no `READ_CONTACTS` in the manifest); the permission entry and runtime
+request flow ship with the M4 settings screen, gated on explicit approval per CLAUDE.md §9.
+Open question #6 in §8 was resolved by ADR 0006. Manually verifiable: add `+43*` as
 Lautlos, call from an Austrian number, the phone stays silent and the call appears in the log.
 
 ### M3 — Persistence

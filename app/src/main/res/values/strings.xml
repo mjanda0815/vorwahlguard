@@ -14,4 +14,30 @@
     <string name="screen_rules_placeholder">Rules — coming soon</string>
     <string name="screen_log_placeholder">Log — coming soon</string>
     <string name="screen_settings_placeholder">Settings — coming soon</string>
+
+    <!-- Rule creation (issue #6) -->
+    <string name="rules_fab_add">Add rule</string>
+    <string name="add_rule_title">New rule</string>
+    <string name="add_rule_tab_country">Choose country</string>
+    <string name="add_rule_tab_prefix">Enter prefix</string>
+    <string name="add_rule_search_hint">Search country</string>
+    <string name="add_rule_pattern_label">Pattern</string>
+    <string name="add_rule_pattern_invalid">Enter a valid pattern, e.g. +43663* or +436631234567</string>
+    <string name="add_rule_pattern_duplicate">A rule for this pattern already exists</string>
+    <string name="add_rule_resulting_pattern">Rule: %1$s</string>
+    <string name="add_rule_collateral_single">This rule also applies to %1$s.</string>
+    <plurals name="add_rule_collateral_more">
+        <item quantity="one">This rule also applies to %1$s and %2$d other region.</item>
+        <item quantity="other">This rule also applies to %1$s and %2$d other regions.</item>
+    </plurals>
+    <string name="add_rule_silence_recommended">Recommended for country-wide rules: the phone stays silent, but the call still shows up in the log.</string>
+    <string name="action_block">Block</string>
+    <string name="action_silence">Silence</string>
+    <string name="action_allow">Allow</string>
+    <string name="add_rule_test_label">Test a number</string>
+    <string name="add_rule_test_invalid">Not a valid phone number</string>
+    <string name="add_rule_test_draft_match">This new rule would match: %1$s</string>
+    <string name="add_rule_test_existing_match">An existing rule already matches: %1$s</string>
+    <string name="add_rule_test_no_match">No rule matches — the call would be allowed</string>
+    <string name="add_rule_save">Save</string>
 </resources>
