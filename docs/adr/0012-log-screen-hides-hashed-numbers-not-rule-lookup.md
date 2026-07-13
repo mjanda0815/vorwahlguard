@@ -49,8 +49,9 @@ Because `isHashed` and `regionCode` are Room-layer facts the domain `CallEvent` 
 does not carry (ADR 0010), the read path for this screen stays inside `:app`: a small mapper
 reads `CallEventEntity` (via `CallEventDao.observeNewestFirst()`) directly into a UI row type,
 the same way `RuleRowUiMapper` (issue #23) reads Room-adjacent state without promoting it into
-`:core-domain`. `matchedRuleId` is carried on the UI row only for potential future
-statistics/filtering use, never for a display lookup.
+`:core-domain`. `matchedRuleId` is read by the mapper only to the extent a future
+statistics/filtering feature might need it — the issue #25 UI row does not carry it, since
+nothing today displays or filters on it.
 
 `PRIVATE`-token rows are unaffected: ADR 0010 already stores them raw (`isHashed = 0`)
 regardless of the pseudonymisation setting, so they keep rendering as today's "🔒 Unterdrückte
