@@ -208,8 +208,8 @@ Keep it small and quiet. No onboarding carousel, no dashboard gamification.
    eSIM, no SIM). Fallback chain: SIM → network → `Locale`. Which wins?
 3. **Rule cache invalidation** across process death — the screening service can be bound in a
    process where the UI never ran. Warm the cache in `onCreate()` of the service, not the app.
-4. **Pseudonymisation and the log screen.** If numbers are hashed, the log can no longer show
-   the number. Show the matched pattern instead, or exclude the last N events from hashing?
+4. ~~**Pseudonymisation and the log screen.**~~ Resolved by ADR 0012: a hashed row shows
+   `regionCode` + action, never a live lookup of `matchedRuleId`.
 5. **`getRegionCodesForCountryCode` availability** in the pinned libphonenumber version. If it
    is absent, how is ambiguity derived — a static table, or `getSupportedRegions()` filtered by
    `getCountryCodeForRegion`?

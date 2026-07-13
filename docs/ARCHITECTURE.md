@@ -123,4 +123,6 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
   salt in DataStore, per-row `is_hashed` flag
 - [`0011`](adr/0011-opportunistic-retention-purge.md) — Retention purge runs opportunistically
   in-process; WorkManager rejected over its merged manifest permissions
+- [`0012`](adr/0012-log-screen-hides-hashed-numbers-not-rule-lookup.md) — Protokoll shows
+  region + action for hashed rows, never a live `matchedRuleId` lookup
 - *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?
