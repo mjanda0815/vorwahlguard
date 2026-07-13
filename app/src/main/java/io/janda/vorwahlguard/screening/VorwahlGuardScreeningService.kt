@@ -6,6 +6,7 @@ import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import io.janda.vorwahlguard.data.contacts.CachedContactsLookup
 import io.janda.vorwahlguard.data.events.RetentionPurger
+import io.janda.vorwahlguard.data.events.UNKNOWN_REGION_CODE
 import io.janda.vorwahlguard.data.rules.CachedRuleRepository
 import io.janda.vorwahlguard.data.settings.CachedSettingsRepository
 import io.janda.vorwahlguard.domain.model.CallEvent
@@ -188,7 +189,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
                         UUID.randomUUID().toString(),
                         clock.now(),
                         finalNumber.e164() ?: PRIVATE_NUMBER_PLACEHOLDER,
-                        finalNumber.region() ?: UNKNOWN_REGION_PLACEHOLDER,
+                        finalNumber.region() ?: UNKNOWN_REGION_CODE,
                         finalDecision.matchedRuleId(),
                         finalDecision.action(),
                     ),
@@ -201,6 +202,5 @@ class VorwahlGuardScreeningService : CallScreeningService() {
         const val TAG = "VorwahlGuardScreening"
         const val WARM_TIMEOUT_MS = 1_000L
         const val PRIVATE_NUMBER_PLACEHOLDER = "PRIVATE"
-        const val UNKNOWN_REGION_PLACEHOLDER = "UNKNOWN"
     }
 }

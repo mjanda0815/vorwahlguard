@@ -58,4 +58,17 @@
     <string name="log_empty_filtered_title">Keine Anrufe für diesen Filter</string>
     <string name="log_empty_filtered_body">Kein erfasster Anruf entspricht der gewählten Aktion.</string>
     <string name="log_region_unknown">Unbekanntes Gebiet</string>
+
+    <!-- Übersicht (Issue #27) -->
+    <string name="overview_hero_label">Geprüfte Anrufe</string>
+    <string name="overview_sparkline_title">Letzte 30 Tage</string>
+    <string name="overview_sparkline_description">Tägliche Anzahl geprüfter Anrufe der letzten 30 Tage</string>
+    <string name="overview_top_countries_title">Häufigste Länder</string>
+    <string name="overview_top_rules_title">Häufigste Regeln</string>
+    <string name="overview_rule_deleted">Gelöschte Regel</string>
+    <string name="overview_empty_title">Noch keine Anrufe geprüft</string>
+    <string name="overview_empty_body">Aktivität wird hier angezeigt, sobald Anrufe geprüft wurden.</string>
+    <string name="overview_role_warning_title">Anrufschutz ist nicht aktiv</string>
+    <string name="overview_role_warning_body">VorwahlGuard muss als Anrufschutz-App festgelegt sein, um Anrufe zu sperren oder stummzuschalten.</string>
+    <string name="overview_role_warning_button">Anrufschutz aktivieren</string>
 </resources>

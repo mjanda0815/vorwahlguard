@@ -125,4 +125,6 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
   in-process; WorkManager rejected over its merged manifest permissions
 - [`0012`](adr/0012-log-screen-hides-hashed-numbers-not-rule-lookup.md) — Protokoll shows
   region + action for hashed rows, never a live `matchedRuleId` lookup
+- [`0013`](adr/0013-dashboard-top-rules-resolve-live-rule.md) — Übersicht's top-rules list
+  resolves the live rule (unlike `0012`), since it answers "what is this rule doing today"
 - *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?
