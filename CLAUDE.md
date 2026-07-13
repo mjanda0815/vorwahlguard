@@ -263,3 +263,44 @@ Enforce it in code, not in prose:
 - Optional setting: store `sha256(number + device-local salt)` instead of the number in
   `call_events`. Statistics by country/rule still work; the raw number does not persist.
 - `CallEvent` retention defaults to 90 days, user-configurable, enforced by a periodic purge.
+
+---
+
+## 13. Release & deployment
+
+Full walkthrough: `docs/RELEASE.md` (signing, R8, GitHub Release) and `docs/WSL-ADB.md`
+(reaching a physical device from WSL2). This section is the summary an agent needs before
+touching either.
+
+**The keystore and its credentials are permanently outside your reach.** They live in
+`~/keys/` and `~/.gradle/gradle.properties` — outside the repository, outside the working
+directory, never in context. `.claude/settings.json` enforces this at the tool level: `deny`
+covers `*.jks`/`*.keystore`/`*.p12`/`keystore.properties`/`signing.properties` anywhere inside
+the repo, plus `~/.gradle/gradle.properties` and `~/keys/**` specifically (the two paths
+`docs/RELEASE.md` actually tells the user to use), on top of `keytool`/`apksigner sign` — not
+just convention. A keystore saved somewhere other than `~/keys/` is not covered by that
+explicit rule; if you ever need to read a path outside the repo that isn't already denied, stop
+and ask rather than assuming it's safe because no rule fired. If a release build fails for want
+of credentials, say so and stop — do not work around it, do not ask the user to paste a
+password into the conversation.
+
+- **`signingConfig` is optional in `app/build.gradle.kts`.** CI has no keystore; the release
+  build type must still succeed there with an unsigned APK. Gate the whole `signingConfigs`
+  block on whether `VG_STORE_FILE` is set, per `docs/RELEASE.md` §3.
+- **R8 (`isMinifyEnabled = true`) is where a debug-clean app breaks.** libphonenumber loads
+  metadata by resource name at runtime, which R8 cannot see statically — a missing `-keep` rule
+  shows up as an empty country picker or a normalization crash, only in the release build, only
+  on a real device. `docs/RELEASE.md` §4 has a starting `proguard-rules.pro`; treat it as
+  unverified until someone has actually installed a release build and created a `+43*` rule.
+- **A signature change revokes `ROLE_CALL_SCREENING`.** Reinstalling a release build over a
+  debug build (different signing certificates) requires `adb uninstall` first, and that
+  uninstall — not just the reinstall — silently drops the call-screening role. `CallScreeningRoleProvider`'s
+  warning card (issue #27) exists partly for this: if it doesn't loudly say "not active" after a
+  reinstall, that's a dashboard bug, not user error.
+- **WSL2 cannot see USB devices.** `/deploy` (`.claude/commands/deploy.md`) assumes
+  `adb devices` already lists the phone. If it doesn't, tell the user to run
+  `source scripts/adb-env.sh` and point them at `docs/WSL-ADB.md` — the one-time Windows-side
+  setup (`usbipd`, the Windows adb server) needs an elevated PowerShell you do not have access
+  to from here. Do not try to fix connectivity by restarting things blindly.
+- **Never echo a phone number out of `adb logcat`** into the conversation, same rule as `Log.*`
+  in the app itself (§1).
