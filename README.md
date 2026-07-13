@@ -96,7 +96,7 @@ This is the whole point, so it is enforced structurally rather than promised in 
 | Data leaving the device | None. There is no code path that could send it. |
 | Third-party SDKs | None. |
 | Country names and flags | Derived from `Locale` and computed Unicode codepoints. No downloads, no assets. |
-| Number retention | Local SQLite, 90 days by default. Expired entries are purged automatically whenever the app or the screening service starts. Optionally numbers are stored as salted hashes instead — statistics still work; the toggle for this arrives with the settings screen. |
+| Number retention | Local SQLite, 90 days by default (configurable in Einstellungen: 30/90/180/365 days). Expired entries are purged automatically whenever the app or the screening service starts. Optionally numbers are stored as salted hashes instead — statistics still work; toggled in Einstellungen. |
 
 Verify it yourself: `app/src/main/AndroidManifest.xml` is short and has no
 `android.permission.INTERNET`.
