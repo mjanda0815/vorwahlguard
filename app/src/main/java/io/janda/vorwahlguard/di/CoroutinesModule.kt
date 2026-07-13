@@ -29,6 +29,17 @@ annotation class ApplicationScope
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultDispatcher
 
+/**
+ * Marks [Dispatchers.IO] for blocking I/O triggered from UI code — e.g.
+ * [io.janda.vorwahlguard.ui.einstellungen.EinstellungenViewModel] running a settings-screen-
+ * initiated [io.janda.vorwahlguard.data.contacts.CachedContactsLookup.refresh] `ContentResolver`
+ * query. Distinct from [DefaultDispatcher]'s CPU-bound, non-blocking intent: this one is for work
+ * that blocks the thread on disk/content-provider access, not for computation.
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class IoDispatcher
+
 @Module
 @InstallIn(SingletonComponent::class)
 object CoroutinesModule {
@@ -41,4 +52,8 @@ object CoroutinesModule {
     @Provides
     @DefaultDispatcher
     fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Provides
+    @IoDispatcher
+    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
 }
