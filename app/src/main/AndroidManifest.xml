@@ -7,8 +7,15 @@
 
   The CallScreeningService is declared here (permission + intent filter + exported) but its
   screening logic is not implemented yet — M0 ships a fail-open stub. See CLAUDE.md §3, §M2.
+
+  READ_CONTACTS (issue #29, user-approved) is the app's first and only declared permission. It
+  is not a network permission and leaves the invariant above unchanged — it powers the on-device
+  contacts-bypass rule (CachedContactsLookup): looked-up numbers never leave the device and are
+  never logged.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application
         android:name=".VorwahlGuardApp"
