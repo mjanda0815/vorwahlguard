@@ -44,27 +44,92 @@ Gradle picks these up globally. Claude Code, running inside the repo, never has 
 — and `.claude/settings.json` denies `Read` on `*.jks`, `keystore.properties` and
 `local.properties` as a second layer. Do not paste a keystore password into a prompt. Ever.
 
-## 2a. Using more than one development machine
+## 2a. Setting up a second development machine
 
-A PKCS12 keystore is a plain file with no machine binding — copying it to a second machine is
-enough, there is nothing to "re-generate" or re-associate. Two things travel together:
+A PKCS12 keystore is a plain file with no machine binding — copying it over is enough, there is
+nothing to "re-generate" or re-associate. **Do not run `keytool` again on the second machine** —
+Android ties an installed app to the certificate it was first signed with, so a release signed
+with a *different* keystore can never update an install signed by this one.
 
-1. **The keystore file itself** (`~/keys/vorwahlguard-release.jks`). Transfer it out of band —
-   a USB drive, `scp`/`rsync` over the local network, or `gpg -c` (symmetric encryption, your
-   own passphrase) through whatever channel you already trust. Not git, not an unencrypted
-   cloud sync.
-2. **The four `gradle.properties` values.** `VG_STORE_FILE` is a local path and will differ per
-   machine; `VG_STORE_PASSWORD`, `VG_KEY_ALIAS`, `VG_KEY_PASSWORD` must be byte-identical on
-   every machine. Keep them in a password manager, not a plaintext file that gets copied around
-   — that also keeps them in sync automatically.
+Two things need to travel from this machine to the new one. Do this once, then every `git clone`
+/ `git pull` on the new machine just works.
 
-Generating a *second, different* keystore per machine is the one thing not to do: Android ties
-an installed app to the certificate it was first signed with, so a release built with a
-different keystore cannot update an install signed by the other one.
+### Step 1 — clone/pull the repo as usual
 
-Keep at least one backup of the keystore file that is not bound to either machine (a password
-manager attachment, an encrypted archive in cloud storage) — see the warning in §1: losing it
-is unrecoverable, not merely inconvenient.
+```bash
+git clone git@github.com:mjanda0815/vorwahlguard.git   # or: git pull, if already cloned
+```
+
+Nothing keystore-related is in the repo (`.gitignore` excludes `*.jks`/`*.keystore`/`*.p12`) —
+this step never touches signing material.
+
+### Step 2 — transfer the keystore file
+
+`~/keys/vorwahlguard-release.jks` (this machine) → `~/keys/vorwahlguard-release.jks` (the new
+one). Pick one:
+
+**Encrypted archive, any transport (recommended — works over any channel you already use,
+e.g. syncing the `.gpg` file through a cloud drive is fine since it's encrypted):**
+
+```bash
+# here (this notebook)
+mkdir -p ~/keys && chmod 700 ~/keys   # if not already done
+gpg -c ~/keys/vorwahlguard-release.jks
+# produces ~/keys/vorwahlguard-release.jks.gpg — enter a passphrase when prompted,
+# and give that passphrase to your other machine out of band (not the same channel
+# you send the file through)
+```
+
+```bash
+# on the new machine, after the .gpg file has arrived
+mkdir -p ~/keys && chmod 700 ~/keys
+gpg -d vorwahlguard-release.jks.gpg > ~/keys/vorwahlguard-release.jks
+chmod 600 ~/keys/vorwahlguard-release.jks
+rm vorwahlguard-release.jks.gpg   # the encrypted copy; delete once decrypted
+```
+
+**Or, if both machines are on the same local network:**
+
+```bash
+scp ~/keys/vorwahlguard-release.jks other-machine:~/keys/
+```
+
+**Or:** copy it via a USB drive — same file, `chmod 700 ~/keys` / `chmod 600` the file on the
+new machine afterward either way.
+
+Not git, not an unencrypted cloud sync, not email/chat.
+
+### Step 3 — set the credentials on the new machine
+
+Create (or edit) `~/.gradle/gradle.properties` on the new machine — **not** in the repo:
+
+```properties
+VG_STORE_FILE=/path/on/the/new/machine/keys/vorwahlguard-release.jks
+VG_STORE_PASSWORD=<same password as this machine>
+VG_KEY_ALIAS=vorwahlguard
+VG_KEY_PASSWORD=<same password as this machine>
+```
+
+`VG_STORE_FILE` is the only value that may differ between machines (it's a local path);
+`VG_STORE_PASSWORD`/`VG_KEY_ALIAS`/`VG_KEY_PASSWORD` must be byte-identical to what you set here.
+Get them from a password manager, not by re-typing from memory — a typo here fails silently as
+"wrong password" at sign time, not at property-read time.
+
+### Step 4 — verify
+
+```bash
+./gradlew :app:assembleRelease
+apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
+```
+
+The printed certificate fingerprint must match what this machine produces for the same command
+— that confirms the transfer worked and both machines sign identically.
+
+### Keeping a backup
+
+Keep at least one copy of the keystore file that is bound to neither machine (a password
+manager attachment, an encrypted archive in cloud storage) — see the warning in §1: losing the
+last copy is unrecoverable, not merely inconvenient.
 
 ## 3. `app/build.gradle.kts`
 

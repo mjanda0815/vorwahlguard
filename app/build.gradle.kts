@@ -21,13 +21,32 @@ android {
         versionName = "0.1.0"
     }
 
+    // Optional: only configured when VG_STORE_FILE is present in ~/.gradle/gradle.properties
+    // (docs/RELEASE.md §2/§3) — CI and any machine without a keystore must still build the
+    // release variant, just unsigned. Never read the keystore or these properties directly;
+    // Gradle resolves them, this file only wires the plumbing.
+    signingConfigs {
+        create("release") {
+            val storePath = providers.gradleProperty("VG_STORE_FILE").orNull
+            if (storePath != null) {
+                storeFile = file(storePath)
+                storePassword = providers.gradleProperty("VG_STORE_PASSWORD").get()
+                keyAlias = providers.gradleProperty("VG_KEY_ALIAS").get()
+                keyPassword = providers.gradleProperty("VG_KEY_PASSWORD").get()
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig = signingConfigs.getByName("release")
+                .takeIf { providers.gradleProperty("VG_STORE_FILE").isPresent }
         }
     }
 
