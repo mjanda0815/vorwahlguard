@@ -60,4 +60,17 @@
     <string name="log_empty_filtered_title">No calls for this filter</string>
     <string name="log_empty_filtered_body">No screened call matches the selected action.</string>
     <string name="log_region_unknown">Unknown region</string>
+
+    <!-- Übersicht (issue #27) -->
+    <string name="overview_hero_label">Calls screened</string>
+    <string name="overview_sparkline_title">Last 30 days</string>
+    <string name="overview_sparkline_description">Daily screened call counts for the last 30 days</string>
+    <string name="overview_top_countries_title">Top countries</string>
+    <string name="overview_top_rules_title">Top rules</string>
+    <string name="overview_rule_deleted">Deleted rule</string>
+    <string name="overview_empty_title">No calls screened yet</string>
+    <string name="overview_empty_body">Screening activity will show up here.</string>
+    <string name="overview_role_warning_title">Call screening is not active</string>
+    <string name="overview_role_warning_body">VorwahlGuard needs to be your call screening app to block or silence calls.</string>
+    <string name="overview_role_warning_button">Enable call screening</string>
 </resources>
