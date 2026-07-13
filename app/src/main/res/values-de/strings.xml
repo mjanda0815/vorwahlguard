@@ -71,4 +71,26 @@
     <string name="overview_role_warning_title">Anrufschutz ist nicht aktiv</string>
     <string name="overview_role_warning_body">VorwahlGuard muss als Anrufschutz-App festgelegt sein, um Anrufe zu sperren oder stummzuschalten.</string>
     <string name="overview_role_warning_button">Anrufschutz aktivieren</string>
+
+    <!-- Einstellungen (Issue #29) -->
+    <string name="settings_role_section_title">Anrufschutz</string>
+    <string name="settings_role_status_held">Aktiv</string>
+    <string name="settings_role_status_not_held">Nicht aktiv</string>
+    <string name="settings_contacts_bypass_title">Kontakte immer durchlassen</string>
+    <string name="settings_contacts_bypass_body">Anrufe von Kontakten in deinem Adressbuch werden nie gesperrt oder stummgeschaltet. Der Abgleich erfolgt ausschließlich auf diesem Gerät — deine Kontakte verlassen es nie und werden nie protokolliert.</string>
+    <string name="settings_contacts_permission_denied">Die Berechtigung wurde nicht erteilt. Du kannst den Kontaktzugriff später in den System-App-Einstellungen erlauben.</string>
+    <string name="settings_retention_title">Aufbewahrung des Anrufprotokolls</string>
+    <string name="settings_retention_body">Wie lange geprüfte Anrufe im Protokoll bleiben, bevor sie gelöscht werden.</string>
+    <plurals name="settings_retention_days">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tage</item>
+    </plurals>
+    <string name="settings_pseudonymise_title">Nummern pseudonymisieren</string>
+    <string name="settings_pseudonymise_body">Speichert einen gesalzenen Hash statt der Nummer im Anrufprotokoll. Statistiken funktionieren weiterhin; die Nummer kann nicht mehr angezeigt werden.</string>
+    <string name="settings_notify_title">Bei Sperrung benachrichtigen</string>
+    <string name="settings_notify_body">Zeigt eine Systembenachrichtigung, wenn ein Anruf gesperrt wird.</string>
+    <string name="settings_about_section_title">Über die App</string>
+    <string name="settings_about_version">Version %1$s</string>
+    <string name="settings_about_license">Lizenz: MIT</string>
+    <string name="settings_about_repo">Quellcode</string>
 </resources>

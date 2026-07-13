@@ -73,4 +73,27 @@
     <string name="overview_role_warning_title">Call screening is not active</string>
     <string name="overview_role_warning_body">VorwahlGuard needs to be your call screening app to block or silence calls.</string>
     <string name="overview_role_warning_button">Enable call screening</string>
+
+    <!-- Einstellungen (issue #29) -->
+    <string name="settings_role_section_title">Call screening</string>
+    <string name="settings_role_status_held">Active</string>
+    <string name="settings_role_status_not_held">Not active</string>
+    <string name="settings_contacts_bypass_title">Contacts always allowed</string>
+    <string name="settings_contacts_bypass_body">Calls from anyone in your address book are never blocked or silenced. The lookup happens entirely on this device — your contacts never leave it and are never logged.</string>
+    <string name="settings_contacts_permission_denied">Permission was not granted. You can allow contacts access later in the system app settings.</string>
+    <string name="settings_retention_title">Call log retention</string>
+    <string name="settings_retention_body">How long screened calls stay in Protokoll before they\'re purged.</string>
+    <plurals name="settings_retention_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="settings_pseudonymise_title">Pseudonymise numbers</string>
+    <string name="settings_pseudonymise_body">Store a salted hash instead of the number in the call log. Statistics still work; the number can no longer be shown.</string>
+    <string name="settings_notify_title">Notify on block</string>
+    <string name="settings_notify_body">Show a system notification when a call is blocked.</string>
+    <string name="settings_about_section_title">About</string>
+    <string name="settings_about_version">Version %1$s</string>
+    <string name="settings_about_license">License: MIT</string>
+    <string name="settings_about_repo">Source code</string>
+    <string name="settings_about_repo_url" translatable="false">https://github.com/mjanda0815/vorwahlguard</string>
 </resources>
