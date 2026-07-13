@@ -40,4 +40,16 @@
     <string name="add_rule_test_existing_match">An existing rule already matches: %1$s</string>
     <string name="add_rule_test_no_match">No rule matches — the call would be allowed</string>
     <string name="add_rule_save">Save</string>
+
+    <!-- Regeln list (issue #23) -->
+    <string name="rules_section_whitelist">Whitelist</string>
+    <string name="rules_section_blacklist">Blacklist</string>
+    <string name="rules_empty_title">No rules yet</string>
+    <string name="rules_empty_body">Tap + to block or silence a prefix.</string>
+    <string name="rules_private_label">Withheld number</string>
+    <string name="rules_delete">Delete rule</string>
+    <plurals name="rules_region_count">
+        <item quantity="one">%1$d region</item>
+        <item quantity="other">%1$d regions</item>
+    </plurals>
 </resources>
