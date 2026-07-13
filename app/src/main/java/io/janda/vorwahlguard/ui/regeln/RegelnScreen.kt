@@ -13,17 +13,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.janda.vorwahlguard.R
-import io.janda.vorwahlguard.ui.components.PlaceholderScreen
 import io.janda.vorwahlguard.ui.regeln.addrule.AddRuleSheet
 
 /**
- * Rules list + creation. The list body is still the M0 placeholder (real list arrives in M4);
- * the FAB opens [AddRuleSheet] (issue #6), which covers both creation paths.
+ * Rules list + creation (issue #23). The FAB opens [AddRuleSheet] (issue #6), which covers both
+ * creation paths; the list body is [RuleListContent], grouped into whitelist/blacklist by
+ * [RegelnViewModel].
  */
 @Composable
-fun RegelnScreen(modifier: Modifier = Modifier) {
+fun RegelnScreen(modifier: Modifier = Modifier, viewModel: RegelnViewModel = hiltViewModel()) {
     var showAddRuleSheet by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -33,7 +36,7 @@ fun RegelnScreen(modifier: Modifier = Modifier) {
             }
         },
     ) { innerPadding ->
-        PlaceholderScreen(R.string.screen_rules_placeholder, Modifier.padding(innerPadding))
+        RuleListContent(uiState, onDelete = viewModel::deleteRule, modifier = Modifier.padding(innerPadding))
     }
 
     if (showAddRuleSheet) {

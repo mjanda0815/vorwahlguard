@@ -5,7 +5,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Persists a newly created or edited [Rule]. The in-memory hot-path cache
+ * Persists a newly created or edited [Rule], and removes one. The in-memory hot-path cache
  * ([CachedRuleRepository]) picks the change up asynchronously via
  * [RuleSnapshotSource.observe] — this class never touches it directly (CLAUDE.md §3 rule 1).
  */
@@ -16,5 +16,9 @@ class RuleWriter @Inject constructor(
 
     suspend fun save(rule: Rule) {
         dao.upsert(rule.toEntity())
+    }
+
+    suspend fun delete(id: String) {
+        dao.deleteById(id)
     }
 }

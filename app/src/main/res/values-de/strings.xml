@@ -38,4 +38,16 @@
     <string name="add_rule_test_existing_match">Eine bestehende Regel greift bereits: %1$s</string>
     <string name="add_rule_test_no_match">Keine Regel greift – der Anruf würde zugelassen</string>
     <string name="add_rule_save">Speichern</string>
+
+    <!-- Regeln list (issue #23) -->
+    <string name="rules_section_whitelist">Whitelist</string>
+    <string name="rules_section_blacklist">Blacklist</string>
+    <string name="rules_empty_title">Noch keine Regeln</string>
+    <string name="rules_empty_body">Tippe auf +, um eine Vorwahl zu sperren oder stummzuschalten.</string>
+    <string name="rules_private_label">Unterdrückte Nummer</string>
+    <string name="rules_delete">Regel löschen</string>
+    <plurals name="rules_region_count">
+        <item quantity="one">%1$d Gebiet</item>
+        <item quantity="other">%1$d Gebiete</item>
+    </plurals>
 </resources>
