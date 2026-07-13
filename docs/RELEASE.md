@@ -44,6 +44,28 @@ Gradle picks these up globally. Claude Code, running inside the repo, never has 
 — and `.claude/settings.json` denies `Read` on `*.jks`, `keystore.properties` and
 `local.properties` as a second layer. Do not paste a keystore password into a prompt. Ever.
 
+## 2a. Using more than one development machine
+
+A PKCS12 keystore is a plain file with no machine binding — copying it to a second machine is
+enough, there is nothing to "re-generate" or re-associate. Two things travel together:
+
+1. **The keystore file itself** (`~/keys/vorwahlguard-release.jks`). Transfer it out of band —
+   a USB drive, `scp`/`rsync` over the local network, or `gpg -c` (symmetric encryption, your
+   own passphrase) through whatever channel you already trust. Not git, not an unencrypted
+   cloud sync.
+2. **The four `gradle.properties` values.** `VG_STORE_FILE` is a local path and will differ per
+   machine; `VG_STORE_PASSWORD`, `VG_KEY_ALIAS`, `VG_KEY_PASSWORD` must be byte-identical on
+   every machine. Keep them in a password manager, not a plaintext file that gets copied around
+   — that also keeps them in sync automatically.
+
+Generating a *second, different* keystore per machine is the one thing not to do: Android ties
+an installed app to the certificate it was first signed with, so a release built with a
+different keystore cannot update an install signed by the other one.
+
+Keep at least one backup of the keystore file that is not bound to either machine (a password
+manager attachment, an encrypted archive in cloud storage) — see the warning in §1: losing it
+is unrecoverable, not merely inconvenient.
+
 ## 3. `app/build.gradle.kts`
 
 The signing config must be **optional**, or CI (which has no keystore) cannot build:
