@@ -141,6 +141,27 @@ class AddRuleViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The pinned "Unterdrückte Nummer" entry in the country picker (issue #60): selects the
+     * reserved [PatternSyntax.PRIVATE_TOKEN] pattern the same way tapping a country selects its
+     * calling-code prefix. Recommended action is SILENCE — the same safe-default reasoning as
+     * for country-wide rules (CLAUDE.md §5).
+     */
+    fun selectPrivateRule() {
+        val recommended = RuleAction.SILENCE
+        _uiState.update { state ->
+            state.copy(
+                selectedCountry = null,
+                collateral = null,
+                patternText = PatternSyntax.PRIVATE_TOKEN,
+                patternValid = true,
+                patternMissingWildcard = false,
+                recommendedAction = recommended,
+                selectedAction = if (manualActionOverride) state.selectedAction else recommended,
+            )
+        }
+    }
+
     fun onPatternTextChanged(text: String) {
         val valid = PatternSyntax.isValid(text)
         val parsed = if (valid) PatternSyntax.parse(text) else null
@@ -207,10 +228,16 @@ class AddRuleViewModel @Inject constructor(
     /**
      * CLAUDE.md §5: a bare calling-code pattern (the whole [PatternKind.PREFIX] digit string is
      * exactly a known calling code, not just prefixed by one) recommends [RuleAction.SILENCE] —
-     * it is the safe default for a country-wide rule.
+     * it is the safe default for a country-wide rule. A [PatternKind.PRIVATE] pattern gets the
+     * same recommendation (issue #60), and via the same path whether it came from the pinned
+     * picker entry or was typed literally into the free-text tab.
      */
     private fun recommendedActionFor(pattern: Pattern): RuleAction =
-        if (isBareCountryPrefix(pattern)) RuleAction.SILENCE else RuleAction.BLOCK
+        if (pattern.kind() == PatternKind.PRIVATE || isBareCountryPrefix(pattern)) {
+            RuleAction.SILENCE
+        } else {
+            RuleAction.BLOCK
+        }
 
     private fun isBareCountryPrefix(pattern: Pattern): Boolean {
         if (pattern.kind() != PatternKind.PREFIX) {

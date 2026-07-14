@@ -45,6 +45,18 @@ fun ActionPicker(
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
+        // Issue #60: a "straight to voicemail" action was requested and rejected — the platform
+        // has no voicemail-routing response, and BLOCK already yields exactly that on carriers
+        // with an active mailbox (network-side, identical to manually declining). This hint makes
+        // the behavior discoverable instead of adding a fourth action that couldn't differ.
+        if (selected == RuleAction.BLOCK) {
+            Text(
+                text = stringResource(R.string.add_rule_block_mailbox_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
     }
 }
 

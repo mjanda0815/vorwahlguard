@@ -30,6 +30,8 @@
         <item quantity="other">Diese Regel gilt auch für %1$s und %2$d weitere Gebiete.</item>
     </plurals>
     <string name="add_rule_silence_recommended">Empfohlen für landesweite Regeln: Das Telefon bleibt stumm, der Anruf erscheint aber weiterhin im Protokoll.</string>
+    <string name="add_rule_block_mailbox_hint">Sperren: Der Anrufer hört besetzt – oder landet direkt in deiner Mailbox, falls eine eingerichtet ist.</string>
+    <string name="add_rule_private_hint">Anrufe ohne Rufnummer</string>
     <string name="action_block">Sperren</string>
     <string name="action_silence">Lautlos</string>
     <string name="action_allow">Zulassen</string>

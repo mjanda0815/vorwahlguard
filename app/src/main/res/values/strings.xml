@@ -32,6 +32,8 @@
         <item quantity="other">This rule also applies to %1$s and %2$d other regions.</item>
     </plurals>
     <string name="add_rule_silence_recommended">Recommended for country-wide rules: the phone stays silent, but the call still shows up in the log.</string>
+    <string name="add_rule_block_mailbox_hint">Block: the caller hears busy — or lands straight in your voicemail, if one is set up.</string>
+    <string name="add_rule_private_hint">Calls with no caller ID</string>
     <string name="action_block">Block</string>
     <string name="action_silence">Silence</string>
     <string name="action_allow">Allow</string>

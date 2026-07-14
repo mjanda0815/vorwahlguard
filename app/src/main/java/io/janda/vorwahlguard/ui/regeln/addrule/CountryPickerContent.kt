@@ -38,10 +38,12 @@ fun LazyListScope.countryPickerItems(
     query: String,
     countries: List<CountryUi>,
     selectedCountry: CountryUi?,
+    privateSelected: Boolean,
     resultingPattern: String,
     collateral: CollateralInfo?,
     onQueryChange: (String) -> Unit,
     onCountrySelected: (CountryUi) -> Unit,
+    onPrivateSelected: () -> Unit,
 ) {
     item {
         Column(modifier = Modifier.padding(top = 16.dp)) {
@@ -53,7 +55,7 @@ fun LazyListScope.countryPickerItems(
                 singleLine = true,
             )
 
-            if (selectedCountry != null) {
+            if (selectedCountry != null || privateSelected) {
                 Text(
                     text = stringResource(R.string.add_rule_resulting_pattern, resultingPattern),
                     style = MaterialTheme.typography.titleSmall,
@@ -64,6 +66,13 @@ fun LazyListScope.countryPickerItems(
                 }
             }
         }
+    }
+
+    // Pinned above the countries and unaffected by the search query (issue #60): withheld
+    // caller IDs have no country, so filtering the entry away with a country query would just
+    // hide the only UI path to a PRIVATE rule.
+    item(key = "private-rule") {
+        PrivateRuleRow(selected = privateSelected, onClick = onPrivateSelected)
     }
 
     items(countries, key = { it.iso2 }) { country ->
@@ -90,17 +99,49 @@ fun CountryPickerContent(
     onQueryChange: (String) -> Unit,
     onCountrySelected: (CountryUi) -> Unit,
     modifier: Modifier = Modifier,
+    privateSelected: Boolean = false,
+    onPrivateSelected: () -> Unit = {},
 ) {
     LazyColumn(modifier = modifier.fillMaxWidth()) {
         countryPickerItems(
             query = query,
             countries = countries,
             selectedCountry = selectedCountry,
+            privateSelected = privateSelected,
             resultingPattern = resultingPattern,
             collateral = collateral,
             onQueryChange = onQueryChange,
             onCountrySelected = onCountrySelected,
+            onPrivateSelected = onPrivateSelected,
         )
+    }
+}
+
+/**
+ * The pinned withheld-caller-id entry (issue #60): mirrors [CountryRow]'s layout with a 🔇
+ * glyph where a flag would sit and the reserved token where a calling code would. Reuses
+ * `rules_private_label`, the same string the rule list shows for a persisted PRIVATE rule.
+ */
+@Composable
+private fun PrivateRuleRow(selected: Boolean, onClick: () -> Unit) {
+    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(text = "🔇")
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.rules_private_label),
+                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = stringResource(R.string.add_rule_private_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

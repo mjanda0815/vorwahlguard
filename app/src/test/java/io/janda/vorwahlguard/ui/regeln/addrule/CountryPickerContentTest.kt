@@ -64,10 +64,12 @@ class CountryPickerContentTest {
         query: String = "",
         countries: List<CountryUi> = this.countries,
         selectedCountry: CountryUi? = null,
+        privateSelected: Boolean = false,
         resultingPattern: String = "",
         collateral: CollateralInfo? = null,
         onQueryChange: (String) -> Unit = {},
         onCountrySelected: (CountryUi) -> Unit = {},
+        onPrivateSelected: () -> Unit = {},
     ) {
         composeTestRule.setContent {
             VorwahlGuardTheme(dynamicColor = false) {
@@ -75,13 +77,50 @@ class CountryPickerContentTest {
                     query = query,
                     countries = countries,
                     selectedCountry = selectedCountry,
+                    privateSelected = privateSelected,
                     resultingPattern = resultingPattern,
                     collateral = collateral,
                     onQueryChange = onQueryChange,
                     onCountrySelected = onCountrySelected,
+                    onPrivateSelected = onPrivateSelected,
                 )
             }
         }
+    }
+
+    @Test
+    fun pinnedPrivateRowShowsItsLabelAndHint() {
+        setContent()
+
+        composeTestRule.onNodeWithText(context.getString(R.string.rules_private_label)).assertExists()
+        composeTestRule.onNodeWithText(context.getString(R.string.add_rule_private_hint)).assertExists()
+    }
+
+    @Test
+    fun pinnedPrivateRowStaysVisibleWhileACountryQueryFiltersTheList() {
+        // The ViewModel filters `countries` by the query; the pinned row must not disappear with
+        // them — withheld caller IDs have no country to match a query against.
+        setContent(query = "Öst", countries = emptyList())
+
+        composeTestRule.onNodeWithText(context.getString(R.string.rules_private_label)).assertExists()
+    }
+
+    @Test
+    fun clickingThePinnedPrivateRowInvokesOnPrivateSelected() {
+        var invoked = false
+        setContent(onPrivateSelected = { invoked = true })
+
+        composeTestRule.onNodeWithText(context.getString(R.string.rules_private_label)).performClick()
+
+        assertEquals(true, invoked)
+    }
+
+    @Test
+    fun resultingPatternIsShownWhenThePrivateRuleIsSelected() {
+        setContent(privateSelected = true, resultingPattern = "PRIVATE")
+
+        val resultingPatternText = context.getString(R.string.add_rule_resulting_pattern, "PRIVATE")
+        composeTestRule.onNodeWithText(resultingPatternText).assertExists()
     }
 
     @Test

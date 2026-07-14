@@ -51,10 +51,12 @@ class AddRuleSheetLayoutTest {
                         query = "",
                         countries = countries,
                         selectedCountry = null,
+                        privateSelected = false,
                         resultingPattern = "",
                         collateral = null,
                         onQueryChange = {},
                         onCountrySelected = {},
+                        onPrivateSelected = {},
                     )
                 }
             }
