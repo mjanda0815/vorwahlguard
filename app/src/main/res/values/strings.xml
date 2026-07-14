@@ -24,6 +24,7 @@
     <string name="add_rule_pattern_label">Pattern</string>
     <string name="add_rule_pattern_invalid">Enter a valid pattern, e.g. +43663* or +436631234567</string>
     <string name="add_rule_pattern_duplicate">A rule for this pattern already exists</string>
+    <string name="add_rule_pattern_missing_wildcard">Did you mean \"%1$s*\"? Without the *, this rule can only match the exact number %1$s, which doesn\'t exist — it will never fire.</string>
     <string name="add_rule_resulting_pattern">Rule: %1$s</string>
     <string name="add_rule_collateral_single">This rule also applies to %1$s.</string>
     <plurals name="add_rule_collateral_more">

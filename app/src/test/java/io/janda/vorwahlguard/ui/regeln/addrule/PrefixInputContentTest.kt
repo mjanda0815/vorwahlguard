@@ -22,9 +22,10 @@ import org.robolectric.annotation.Config
  * Covers the stateless [PrefixInputContent]: the pattern field's error/supportingText gating
  * (empty text never shows the invalid message even though it is not a valid pattern, per the
  * composable's `showInvalid = patternText.isNotEmpty() && !patternValid`), the duplicate message
- * taking priority display-wise once the text is non-empty and valid, the "Nummer testen" outcome
- * text for every [TestOutcome] branch (including the %1$s action-label substitution), and the
- * two text field callbacks wiring keystrokes back up.
+ * taking priority display-wise once the text is non-empty and valid, the missing-wildcard warning
+ * (a bare calling code like `+43` with no trailing `*`) and its priority ordering against
+ * duplicate, the "Nummer testen" outcome text for every [TestOutcome] branch (including the %1$s
+ * action-label substitution), and the two text field callbacks wiring keystrokes back up.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29])
@@ -56,6 +57,9 @@ class PrefixInputContentTest {
         silenceLabel = context.getString(R.string.action_silence)
     }
 
+    private fun missingWildcardText(patternText: String): String =
+        context.getString(R.string.add_rule_pattern_missing_wildcard, patternText)
+
     private fun draftMatchText(actionLabel: String): String =
         context.getString(R.string.add_rule_test_draft_match, actionLabel)
 
@@ -65,6 +69,7 @@ class PrefixInputContentTest {
     private fun setContent(
         patternText: String = "",
         patternValid: Boolean = true,
+        patternMissingWildcard: Boolean = false,
         duplicate: Boolean = false,
         testInput: String = "",
         testOutcome: TestOutcome? = null,
@@ -76,6 +81,7 @@ class PrefixInputContentTest {
                 PrefixInputContent(
                     patternText = patternText,
                     patternValid = patternValid,
+                    patternMissingWildcard = patternMissingWildcard,
                     duplicate = duplicate,
                     testInput = testInput,
                     testOutcome = testOutcome,
@@ -107,6 +113,22 @@ class PrefixInputContentTest {
 
         composeTestRule.onNodeWithText(patternDuplicate).assertExists()
         composeTestRule.onNodeWithText(patternInvalid).assertDoesNotExist()
+    }
+
+    @Test
+    fun missingWildcardPatternShowsTheMissingWildcardMessageFormattedWithThePatternText() {
+        setContent(patternText = "+43", patternValid = true, patternMissingWildcard = true)
+
+        composeTestRule.onNodeWithText(missingWildcardText("+43")).assertExists()
+        composeTestRule.onNodeWithText(patternInvalid).assertDoesNotExist()
+    }
+
+    @Test
+    fun duplicateTakesPriorityOverMissingWildcardWhenBothAreTrue() {
+        setContent(patternText = "+43", patternValid = true, patternMissingWildcard = true, duplicate = true)
+
+        composeTestRule.onNodeWithText(patternDuplicate).assertExists()
+        composeTestRule.onNodeWithText(missingWildcardText("+43")).assertDoesNotExist()
     }
 
     @Test

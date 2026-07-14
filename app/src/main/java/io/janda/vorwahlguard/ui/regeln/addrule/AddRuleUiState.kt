@@ -23,6 +23,12 @@ data class CollateralInfo(
  * Single immutable draft state for `AddRuleSheet`. Both the "Land wählen" and "Vorwahl eingeben"
  * tabs write the same [patternText]/[selectedAction] pair — there is exactly one draft, not one
  * per tab.
+ *
+ * [patternMissingWildcard] is set only on the "Vorwahl eingeben" tab: a valid, wildcard-free
+ * pattern whose digits exactly equal a known calling code (e.g. the user typed `+43` instead of
+ * `+43*`) parses as an EXACT match on the literal number "+43", which no real incoming call can
+ * ever have — a syntactically valid but permanently dead rule. This flags that footgun without
+ * blocking the (still syntactically legal) save.
  */
 data class AddRuleUiState(
     val tab: AddRuleTab = AddRuleTab.COUNTRY,
@@ -32,6 +38,7 @@ data class AddRuleUiState(
     val collateral: CollateralInfo? = null,
     val patternText: String = "",
     val patternValid: Boolean = false,
+    val patternMissingWildcard: Boolean = false,
     val recommendedAction: RuleAction = RuleAction.BLOCK,
     val selectedAction: RuleAction = RuleAction.BLOCK,
     val testInput: String = "",
