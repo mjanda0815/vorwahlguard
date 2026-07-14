@@ -8,12 +8,13 @@ class SettingsTest {
 
     @Test
     void isPlainImmutableData() {
-        Settings settings = new Settings(true, 90, false, true);
+        Settings settings = new Settings(true, 90, false, true, true);
 
         assertThat(settings.contactsBypassEnabled()).isTrue();
         assertThat(settings.retentionDays()).isEqualTo(90);
         assertThat(settings.pseudonymiseNumbers()).isFalse();
         assertThat(settings.notifyOnBlock()).isTrue();
+        assertThat(settings.logAllowedCalls()).isTrue();
     }
 
     @Test
@@ -24,5 +25,6 @@ class SettingsTest {
         assertThat(settings.retentionDays()).isEqualTo(90);
         assertThat(settings.pseudonymiseNumbers()).isFalse();
         assertThat(settings.notifyOnBlock()).isFalse();
+        assertThat(settings.logAllowedCalls()).isFalse();
     }
 }

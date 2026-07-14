@@ -85,7 +85,11 @@ Regeln überhaupt herangezogen werden.
   lokal ausgewertet mit bedingungsloser Priorität
 - **Ehrlich bei Mehrdeutigkeit** — `+1` ist nicht „die USA", sondern die USA, Kanada und zwanzig
   karibische Gebiete. Die App sagt dir das, bevor du sie alle sperrst.
-- **Statistiken** — was geprüft wurde, wann, von wo, durch welche Regel
+- **Statistiken** — was geprüft wurde, wann, von wo, durch welche Regel, mit einer
+  Verteilungsanzeige nach Aktion
+- **Optionales Protokollieren zugelassener Anrufe** — standardmäßig aus; wenn aktiviert,
+  erscheinen auch durchgelassene Anrufe im Protokoll, samt Grund (Kontakt oder keine
+  passende Regel)
 - **Wirklich offline** — die App besitzt nicht die `INTERNET`-Berechtigung und *kann* keine
   Netzwerkanfrage stellen. Keine Konten, keine Telemetrie, kein Crash-Reporting, keine Werbung.
 - **Optionale Pseudonymisierung** — speichert gesalzene Hashes statt Nummern; Statistiken

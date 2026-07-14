@@ -1,8 +1,10 @@
 package io.janda.vorwahlguard.ui.uebersicht
 
+import io.janda.vorwahlguard.data.events.ActionReasonCount
 import io.janda.vorwahlguard.data.events.RegionCount
 import io.janda.vorwahlguard.data.events.RuleIdCount
 import io.janda.vorwahlguard.domain.model.Country
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.PatternSyntax
 import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
@@ -188,5 +190,82 @@ class DashboardUiMapperTest {
         assertTrue(result[0] is TopRuleUi.Deleted)
         assertTrue(result[1] is TopRuleUi.Known)
         assertFalse(result[0] is TopRuleUi.Known)
+    }
+
+    @Test
+    fun `toBreakdown returns all five categories in fixed order with zero counts for an empty input`() {
+        val result = mapper.toBreakdown(emptyList())
+
+        assertEquals(
+            listOf(
+                BreakdownEntry(BreakdownCategory.BLOCK, 0),
+                BreakdownEntry(BreakdownCategory.SILENCE, 0),
+                BreakdownEntry(BreakdownCategory.ALLOW_RULE, 0),
+                BreakdownEntry(BreakdownCategory.CONTACT, 0),
+                BreakdownEntry(BreakdownCategory.NO_RULE, 0),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun `toBreakdown maps BLOCK action to the BLOCK category regardless of reason`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount(RuleAction.BLOCK.name, DecisionReason.RULE_MATCH.name, 3)))
+
+        assertEquals(3, result.single { it.category == BreakdownCategory.BLOCK }.count)
+    }
+
+    @Test
+    fun `toBreakdown maps SILENCE action to the SILENCE category`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount(RuleAction.SILENCE.name, DecisionReason.RULE_MATCH.name, 4)))
+
+        assertEquals(4, result.single { it.category == BreakdownCategory.SILENCE }.count)
+    }
+
+    @Test
+    fun `toBreakdown maps ALLOW with RULE_MATCH to ALLOW_RULE`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount(RuleAction.ALLOW.name, DecisionReason.RULE_MATCH.name, 5)))
+
+        assertEquals(5, result.single { it.category == BreakdownCategory.ALLOW_RULE }.count)
+    }
+
+    @Test
+    fun `toBreakdown maps CONTACT_BYPASS reason to CONTACT`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount(RuleAction.ALLOW.name, DecisionReason.CONTACT_BYPASS.name, 6)))
+
+        assertEquals(6, result.single { it.category == BreakdownCategory.CONTACT }.count)
+    }
+
+    @Test
+    fun `toBreakdown maps NO_MATCH reason to NO_RULE`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount(RuleAction.ALLOW.name, DecisionReason.NO_MATCH.name, 7)))
+
+        assertEquals(7, result.single { it.category == BreakdownCategory.NO_RULE }.count)
+    }
+
+    @Test
+    fun `toBreakdown sums multiple rows into the same category`() {
+        val result = mapper.toBreakdown(
+            listOf(
+                ActionReasonCount(RuleAction.BLOCK.name, DecisionReason.RULE_MATCH.name, 2),
+                ActionReasonCount(RuleAction.BLOCK.name, DecisionReason.RULE_MATCH.name, 3),
+            ),
+        )
+
+        assertEquals(5, result.single { it.category == BreakdownCategory.BLOCK }.count)
+    }
+
+    @Test
+    fun `toBreakdown drops a row whose action no longer parses`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount("GARBAGE", DecisionReason.RULE_MATCH.name, 9)))
+
+        assertTrue(result.all { it.count == 0 })
+    }
+
+    @Test
+    fun `toBreakdown drops a row whose reason no longer parses`() {
+        val result = mapper.toBreakdown(listOf(ActionReasonCount(RuleAction.ALLOW.name, "GARBAGE", 9)))
+
+        assertTrue(result.all { it.count == 0 })
     }
 }

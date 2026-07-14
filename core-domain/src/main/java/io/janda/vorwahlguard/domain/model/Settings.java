@@ -20,25 +20,29 @@ public final class Settings {
     private final int retentionDays;
     private final boolean pseudonymiseNumbers;
     private final boolean notifyOnBlock;
+    private final boolean logAllowedCalls;
 
     public Settings(
             boolean contactsBypassEnabled,
             int retentionDays,
             boolean pseudonymiseNumbers,
-            boolean notifyOnBlock) {
+            boolean notifyOnBlock,
+            boolean logAllowedCalls) {
         this.contactsBypassEnabled = contactsBypassEnabled;
         this.retentionDays = retentionDays;
         this.pseudonymiseNumbers = pseudonymiseNumbers;
         this.notifyOnBlock = notifyOnBlock;
+        this.logAllowedCalls = logAllowedCalls;
     }
 
     /**
      * The safest-posture defaults (CLAUDE.md §12: 90-day retention default): contacts bypass
-     * off, 90-day retention, numbers not pseudonymised, no block notifications. The single
-     * source of truth for these values — adapters must not redeclare them.
+     * off, 90-day retention, numbers not pseudonymised, no block notifications, allowed calls
+     * not logged (issue #59 — opt-in only). The single source of truth for these values —
+     * adapters must not redeclare them.
      */
     public static Settings defaults() {
-        return new Settings(false, 90, false, false);
+        return new Settings(false, 90, false, false, false);
     }
 
     public boolean contactsBypassEnabled() {
@@ -57,6 +61,11 @@ public final class Settings {
         return notifyOnBlock;
     }
 
+    /** Whether allowed calls (contact bypass / no matching rule) are also logged. Off by default. */
+    public boolean logAllowedCalls() {
+        return logAllowedCalls;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -64,12 +73,14 @@ public final class Settings {
         return contactsBypassEnabled == other.contactsBypassEnabled
                 && retentionDays == other.retentionDays
                 && pseudonymiseNumbers == other.pseudonymiseNumbers
-                && notifyOnBlock == other.notifyOnBlock;
+                && notifyOnBlock == other.notifyOnBlock
+                && logAllowedCalls == other.logAllowedCalls;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(contactsBypassEnabled, retentionDays, pseudonymiseNumbers, notifyOnBlock);
+        return Objects.hash(
+                contactsBypassEnabled, retentionDays, pseudonymiseNumbers, notifyOnBlock, logAllowedCalls);
     }
 
     @Override
@@ -78,6 +89,7 @@ public final class Settings {
                 + ", retentionDays=" + retentionDays
                 + ", pseudonymiseNumbers=" + pseudonymiseNumbers
                 + ", notifyOnBlock=" + notifyOnBlock
+                + ", logAllowedCalls=" + logAllowedCalls
                 + "]";
     }
 }

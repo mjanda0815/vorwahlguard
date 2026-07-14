@@ -1,6 +1,7 @@
 package io.janda.vorwahlguard.ui.protokoll
 
 import io.janda.vorwahlguard.data.events.CallEventEntity
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import java.time.ZoneId
@@ -47,6 +48,13 @@ class CallEventRowUiMapper(private val catalog: CountryCatalog) {
             .withZone(zone)
             .format(entity.occurredAt)
 
-        return CallEventRowUi(entity.id, timestampText, action, display)
+        val reason = runCatching { DecisionReason.valueOf(entity.reason) }.getOrNull()
+        val allowReason = when (reason) {
+            DecisionReason.CONTACT_BYPASS -> AllowReasonUi.CONTACT_BYPASS
+            DecisionReason.NO_MATCH -> AllowReasonUi.NO_MATCH
+            DecisionReason.RULE_MATCH, null -> null
+        }
+
+        return CallEventRowUi(entity.id, timestampText, action, display, allowReason)
     }
 }

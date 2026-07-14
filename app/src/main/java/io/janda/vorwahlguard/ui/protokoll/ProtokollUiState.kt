@@ -22,7 +22,15 @@ data class CallEventRowUi(
     val timestampText: String,
     val action: RuleAction,
     val display: CallEventDisplay,
+    /** Non-null only for a logged allowed call that did not come from a rule match (issue #59). */
+    val allowReason: AllowReasonUi? = null,
 )
+
+/**
+ * Why a logged allowed call was allowed, when it was not an explicit rule match (issue #59 /
+ * ADR 0014). `null` on [CallEventRowUi.allowReason] covers both rule matches and non-ALLOW rows.
+ */
+enum class AllowReasonUi { CONTACT_BYPASS, NO_MATCH }
 
 /**
  * How a logged call is rendered, resolved once by [CallEventRowUiMapper] instead of in Compose.

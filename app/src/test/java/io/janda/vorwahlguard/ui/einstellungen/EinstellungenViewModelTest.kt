@@ -57,7 +57,7 @@ class EinstellungenViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(dispatcher)
 
     /** A deliberately non-default fixture so a transform that only flips one field is provable. */
-    private val nonDefaultSettings = Settings(false, 30, true, true)
+    private val nonDefaultSettings = Settings(false, 30, true, true, false)
 
     private lateinit var settingsFlow: MutableStateFlow<Settings>
     private lateinit var settingsStore: SettingsStore
@@ -114,6 +114,7 @@ class EinstellungenViewModelTest {
         assertEquals(nonDefaultSettings.pseudonymiseNumbers(), state.pseudonymiseNumbers)
         assertEquals(nonDefaultSettings.notifyOnBlock(), state.notifyOnBlock)
         assertEquals(nonDefaultSettings.retentionDays(), state.retentionDays)
+        assertEquals(nonDefaultSettings.logAllowedCalls(), state.logAllowedCalls)
     }
 
     @Test
@@ -136,11 +137,12 @@ class EinstellungenViewModelTest {
         assertEquals(nonDefaultSettings.retentionDays(), result.retentionDays())
         assertTrue(result.pseudonymiseNumbers())
         assertEquals(nonDefaultSettings.notifyOnBlock(), result.notifyOnBlock())
+        assertEquals(nonDefaultSettings.logAllowedCalls(), result.logAllowedCalls())
     }
 
     @Test
     fun `onNotifyOnBlockToggled true flips only notifyOnBlock`() = runTest(dispatcher) {
-        val fixture = Settings(false, 30, true, false)
+        val fixture = Settings(false, 30, true, false, false)
         val viewModel = createViewModel()
 
         viewModel.onNotifyOnBlockToggled(true)
@@ -151,6 +153,7 @@ class EinstellungenViewModelTest {
         assertEquals(fixture.retentionDays(), result.retentionDays())
         assertEquals(fixture.pseudonymiseNumbers(), result.pseudonymiseNumbers())
         assertTrue(result.notifyOnBlock())
+        assertEquals(fixture.logAllowedCalls(), result.logAllowedCalls())
     }
 
     @Test
@@ -165,6 +168,22 @@ class EinstellungenViewModelTest {
         assertEquals(180, result.retentionDays())
         assertEquals(nonDefaultSettings.pseudonymiseNumbers(), result.pseudonymiseNumbers())
         assertEquals(nonDefaultSettings.notifyOnBlock(), result.notifyOnBlock())
+        assertEquals(nonDefaultSettings.logAllowedCalls(), result.logAllowedCalls())
+    }
+
+    @Test
+    fun `onLogAllowedCallsToggled true flips only logAllowedCalls`() = runTest(dispatcher) {
+        val viewModel = createViewModel()
+
+        viewModel.onLogAllowedCallsToggled(true)
+
+        coVerify(exactly = 1) { settingsStore.update(any()) }
+        val result = updateTransform.captured.invoke(nonDefaultSettings)
+        assertEquals(nonDefaultSettings.contactsBypassEnabled(), result.contactsBypassEnabled())
+        assertEquals(nonDefaultSettings.retentionDays(), result.retentionDays())
+        assertEquals(nonDefaultSettings.pseudonymiseNumbers(), result.pseudonymiseNumbers())
+        assertEquals(nonDefaultSettings.notifyOnBlock(), result.notifyOnBlock())
+        assertTrue(result.logAllowedCalls())
     }
 
     @Test
@@ -182,6 +201,7 @@ class EinstellungenViewModelTest {
         assertEquals(nonDefaultSettings.retentionDays(), result.retentionDays())
         assertEquals(nonDefaultSettings.pseudonymiseNumbers(), result.pseudonymiseNumbers())
         assertEquals(nonDefaultSettings.notifyOnBlock(), result.notifyOnBlock())
+        assertEquals(nonDefaultSettings.logAllowedCalls(), result.logAllowedCalls())
         coVerify(exactly = 1) { contactsLookup.refresh() }
         assertTrue(effects.isEmpty())
         job.cancel()
@@ -217,6 +237,7 @@ class EinstellungenViewModelTest {
         assertEquals(nonDefaultSettings.retentionDays(), result.retentionDays())
         assertEquals(nonDefaultSettings.pseudonymiseNumbers(), result.pseudonymiseNumbers())
         assertEquals(nonDefaultSettings.notifyOnBlock(), result.notifyOnBlock())
+        assertEquals(nonDefaultSettings.logAllowedCalls(), result.logAllowedCalls())
         coVerify(exactly = 0) { contactsLookup.refresh() }
         assertTrue(effects.isEmpty())
         job.cancel()

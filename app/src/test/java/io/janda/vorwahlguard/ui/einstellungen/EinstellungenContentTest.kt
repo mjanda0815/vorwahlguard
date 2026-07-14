@@ -36,13 +36,14 @@ class EinstellungenContentTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    // EinstellungenContent lays out exactly three Switch controls, in this order: contacts-bypass,
-    // pseudonymise, notify-on-block (RetentionRow's ExposedDropdownMenuBox is not a `toggleable`
-    // node, so it does not shift these indices).
+    // EinstellungenContent lays out exactly four Switch controls, in this order: contacts-bypass,
+    // log-allowed-calls (issue #59), pseudonymise, notify-on-block (RetentionRow's
+    // ExposedDropdownMenuBox is not a `toggleable` node, so it does not shift these indices).
     private companion object {
         const val CONTACTS_BYPASS_SWITCH_INDEX = 0
-        const val PSEUDONYMISE_SWITCH_INDEX = 1
-        const val NOTIFY_SWITCH_INDEX = 2
+        const val LOG_ALLOWED_SWITCH_INDEX = 1
+        const val PSEUDONYMISE_SWITCH_INDEX = 2
+        const val NOTIFY_SWITCH_INDEX = 3
     }
 
     private lateinit var context: Context
@@ -68,6 +69,7 @@ class EinstellungenContentTest {
         contactsBypassEnabled: Boolean = false,
         pseudonymiseNumbers: Boolean = false,
         notifyOnBlock: Boolean = false,
+        logAllowedCalls: Boolean = false,
         retentionDays: Int = 90,
         contactsPermissionDenied: Boolean = false,
         appVersion: String = "1.2.3",
@@ -78,6 +80,7 @@ class EinstellungenContentTest {
         contactsBypassEnabled = contactsBypassEnabled,
         pseudonymiseNumbers = pseudonymiseNumbers,
         notifyOnBlock = notifyOnBlock,
+        logAllowedCalls = logAllowedCalls,
         retentionDays = retentionDays,
         contactsPermissionDenied = contactsPermissionDenied,
         appVersion = appVersion,
@@ -90,6 +93,7 @@ class EinstellungenContentTest {
         onPseudonymiseToggled: (Boolean) -> Unit = {},
         onNotifyToggled: (Boolean) -> Unit = {},
         onRetentionSelected: (Int) -> Unit = {},
+        onLogAllowedToggled: (Boolean) -> Unit = {},
         onOpenRepo: () -> Unit = {},
     ) {
         composeTestRule.setContent {
@@ -101,6 +105,7 @@ class EinstellungenContentTest {
                     onPseudonymiseToggled = onPseudonymiseToggled,
                     onNotifyToggled = onNotifyToggled,
                     onRetentionSelected = onRetentionSelected,
+                    onLogAllowedToggled = onLogAllowedToggled,
                     onOpenRepo = onOpenRepo,
                 )
             }
@@ -184,6 +189,33 @@ class EinstellungenContentTest {
         setContent(loadedState(contactsPermissionDenied = false))
 
         composeTestRule.onNodeWithText(permissionDeniedText).assertDoesNotExist()
+    }
+
+    @Test
+    fun logAllowedCallsSwitchReflectsItsStateField() {
+        setContent(loadedState(logAllowedCalls = true))
+
+        composeTestRule.onAllNodes(isToggleable())[LOG_ALLOWED_SWITCH_INDEX].assertIsOn()
+    }
+
+    @Test
+    fun logAllowedCallsSwitchInvokesOnLogAllowedToggledWithTheOppositeValue() {
+        var received: Boolean? = null
+        setContent(
+            loadedState(logAllowedCalls = false),
+            onLogAllowedToggled = { received = it },
+        )
+
+        composeTestRule.onAllNodes(isToggleable())[LOG_ALLOWED_SWITCH_INDEX].performScrollTo().performClick()
+
+        assertEquals(true, received)
+    }
+
+    @Test
+    fun logAllowedCallsTitleIsRendered() {
+        setContent(loadedState())
+
+        composeTestRule.onNodeWithText(context.getString(R.string.settings_log_allowed_title)).assertExists()
     }
 
     @Test

@@ -1,8 +1,11 @@
 package io.janda.vorwahlguard.ui.uebersicht
 
+import io.janda.vorwahlguard.data.events.ActionReasonCount
 import io.janda.vorwahlguard.data.events.RegionCount
 import io.janda.vorwahlguard.data.events.RuleIdCount
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.Rule
+import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.ui.regeln.RuleRowUiMapper
 import java.time.Instant
@@ -62,6 +65,30 @@ class DashboardUiMapper(private val catalog: CountryCatalog) {
         } else {
             TopRuleUi.Deleted(ruleIdCount.count)
         }
+    }
+
+    /**
+     * Buckets [counts] into the five fixed [BreakdownCategory]s (issue #59), always returned in
+     * that enum's declaration order — a zero-count category is included, not omitted, so the
+     * caller decides how to render "nothing here" rather than guessing from a shorter list. A row
+     * whose `action` or `reason` no longer parses (schema drift) is dropped, not crashed on.
+     */
+    fun toBreakdown(counts: List<ActionReasonCount>): List<BreakdownEntry> {
+        val totals = mutableMapOf<BreakdownCategory, Int>()
+        for (row in counts) {
+            val action = runCatching { RuleAction.valueOf(row.action) }.getOrNull() ?: continue
+            val reason = runCatching { DecisionReason.valueOf(row.reason) }.getOrNull() ?: continue
+            val category = when {
+                action == RuleAction.BLOCK -> BreakdownCategory.BLOCK
+                action == RuleAction.SILENCE -> BreakdownCategory.SILENCE
+                action == RuleAction.ALLOW && reason == DecisionReason.RULE_MATCH -> BreakdownCategory.ALLOW_RULE
+                reason == DecisionReason.CONTACT_BYPASS -> BreakdownCategory.CONTACT
+                reason == DecisionReason.NO_MATCH -> BreakdownCategory.NO_RULE
+                else -> continue
+            }
+            totals[category] = (totals[category] ?: 0) + row.count
+        }
+        return BreakdownCategory.entries.map { BreakdownEntry(it, totals[it] ?: 0) }
     }
 
     private companion object {

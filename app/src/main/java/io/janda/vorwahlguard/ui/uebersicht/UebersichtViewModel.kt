@@ -4,7 +4,10 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.janda.vorwahlguard.data.events.ActionReasonCount
 import io.janda.vorwahlguard.data.events.CallEventDao
+import io.janda.vorwahlguard.data.events.RegionCount
+import io.janda.vorwahlguard.data.events.RuleIdCount
 import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
 import io.janda.vorwahlguard.di.DefaultDispatcher
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
@@ -25,14 +28,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Backs `UebersichtScreen`'s dashboard body (issue #27): the hero counter, 30-day sparkline, and
- * top-countries/top-rules lists are all derived from a 5-way [combine] of [CallEventDao]'s
- * aggregate Flows plus [RuleSnapshotSource.observe] (the same source `RegelnViewModel` reads),
- * mapped via [DashboardUiMapper] and [RuleRowUiMapper] — both built internally, the same
- * "ViewModel owns its own small mapper" idiom `RegelnViewModel`/`ProtokollViewModel` use. Role
- * status ([CallScreeningRoleProvider]) is read separately: it does not come from Room, and
- * [refreshRoleStatus] lets `UebersichtScreen` re-check it on `ON_RESUME` without touching the
- * aggregate Flows at all.
+ * Backs `UebersichtScreen`'s dashboard body (issue #27): the hero counter, 30-day sparkline,
+ * top-countries/top-rules lists, and the action breakdown (issue #59) are all derived from
+ * [CallEventDao]'s aggregate Flows plus [RuleSnapshotSource.observe] (the same source
+ * `RegelnViewModel` reads) — combined in two steps, since [combine] only has a typed overload up
+ * to five Flows and there are six sources in total. Mapped via [DashboardUiMapper] and
+ * [RuleRowUiMapper] — both built internally, the same "ViewModel owns its own small mapper" idiom
+ * `RegelnViewModel`/`ProtokollViewModel` use. Role status ([CallScreeningRoleProvider]) is read
+ * separately: it does not come from Room, and [refreshRoleStatus] lets `UebersichtScreen`
+ * re-check it on `ON_RESUME` without touching the aggregate Flows at all.
  */
 @HiltViewModel
 class UebersichtViewModel @Inject constructor(
@@ -65,21 +69,26 @@ class UebersichtViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            combine(
+            // Six sources exceed combine()'s typed 5-arg overload, so the five CallEventDao
+            // aggregate Flows are combined first, then combined again with the rule snapshot.
+            val aggregates = combine(
                 dao.observeTotalCount(),
                 dao.observeOccurredAtSince(thirtyDaysAgoMillis),
                 dao.observeTopRegions(),
                 dao.observeTopRules(),
-                ruleSnapshotSource.observe(),
-            ) { totalCount, occurredAtMillis, topRegions, topRules, rules ->
+                dao.observeActionBreakdown(),
+                ::Aggregates,
+            )
+            combine(aggregates, ruleSnapshotSource.observe()) { agg, rules ->
                 withContext(defaultDispatcher) {
                     val locale = Locale.getDefault()
                     val zone = ZoneId.systemDefault()
-                    val sparkline = mapper.toSparkline(occurredAtMillis, Instant.now(), zone)
-                    val topCountries = topRegions.map { mapper.toTopCountry(it, locale) }
+                    val sparkline = mapper.toSparkline(agg.occurredAtMillis, Instant.now(), zone)
+                    val topCountries = agg.topRegions.map { mapper.toTopCountry(it, locale) }
                     val rulesById = rules.associateBy { it.id() }
-                    val topRuleRows = mapper.toTopRules(topRules, rulesById, ruleRowMapper, locale)
-                    DashboardData(totalCount, sparkline, topCountries, topRuleRows)
+                    val topRuleRows = mapper.toTopRules(agg.topRules, rulesById, ruleRowMapper, locale)
+                    val breakdown = mapper.toBreakdown(agg.actionBreakdown)
+                    DashboardData(agg.totalCount, sparkline, topCountries, topRuleRows, breakdown)
                 }
             }.collect { data ->
                 _uiState.update { current ->
@@ -88,6 +97,7 @@ class UebersichtViewModel @Inject constructor(
                         sparkline = data.sparkline,
                         topCountries = data.topCountries,
                         topRules = data.topRules,
+                        actionBreakdown = data.actionBreakdown,
                         hasAnyEvents = data.totalScreened > 0,
                         loaded = true,
                     )
@@ -105,10 +115,20 @@ class UebersichtViewModel @Inject constructor(
 
     fun createRoleRequestIntent(): Intent? = roleProvider.createRoleRequestIntent()
 
+    /** Intermediate combine() step — see the comment in [init] for why this exists. */
+    private data class Aggregates(
+        val totalCount: Int,
+        val occurredAtMillis: List<Long>,
+        val topRegions: List<RegionCount>,
+        val topRules: List<RuleIdCount>,
+        val actionBreakdown: List<ActionReasonCount>,
+    )
+
     private data class DashboardData(
         val totalScreened: Int,
         val sparkline: List<DaySparkPoint>,
         val topCountries: List<TopCountryUi>,
         val topRules: List<TopRuleUi>,
+        val actionBreakdown: List<BreakdownEntry>,
     )
 }

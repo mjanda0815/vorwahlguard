@@ -51,6 +51,7 @@ fun EinstellungenContent(
     onPseudonymiseToggled: (Boolean) -> Unit,
     onNotifyToggled: (Boolean) -> Unit,
     onRetentionSelected: (Int) -> Unit,
+    onLogAllowedToggled: (Boolean) -> Unit,
     onOpenRepo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,6 +80,11 @@ fun EinstellungenContent(
         RetentionRow(
             selectedDays = state.retentionDays,
             onRetentionSelected = onRetentionSelected,
+            modifier = Modifier.padding(bottom = 24.dp),
+        )
+        LogAllowedCallsRow(
+            checked = state.logAllowedCalls,
+            onCheckedChange = onLogAllowedToggled,
             modifier = Modifier.padding(bottom = 24.dp),
         )
         PseudonymiseRow(
@@ -213,6 +219,17 @@ private fun RetentionRow(
             }
         }
     }
+}
+
+@Composable
+private fun LogAllowedCallsRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    ToggleRow(
+        title = stringResource(R.string.settings_log_allowed_title),
+        body = stringResource(R.string.settings_log_allowed_body),
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        modifier = modifier,
+    )
 }
 
 @Composable

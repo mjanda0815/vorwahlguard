@@ -91,6 +91,12 @@ room {
 dependencies {
     implementation(project(":core-domain"))
 
+    // Alignment only, not a new dependency: raises the transitively-resolved
+    // kotlinx-serialization (navigation pulls 1.7.3) to the 1.8.1 that room-migration 2.8.4
+    // — and therefore MigrationTestHelper on the androidTest classpath, via AGP's consistent
+    // resolution — is compiled against. See the version catalog comment.
+    implementation(platform(libs.kotlinx.serialization.bom))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

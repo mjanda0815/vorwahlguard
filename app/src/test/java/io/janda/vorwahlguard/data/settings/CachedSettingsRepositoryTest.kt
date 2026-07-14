@@ -51,7 +51,7 @@ class CachedSettingsRepositoryTest {
 
     @Test
     fun `current reflects the store after refresh`() = runBlocking {
-        val nonDefault = Settings(true, 30, true, true)
+        val nonDefault = Settings(true, 30, true, true, true)
         store.update { nonDefault }
 
         repository.refresh()
@@ -68,7 +68,7 @@ class CachedSettingsRepositoryTest {
         val scope = CoroutineScope(Dispatchers.Unconfined + Job())
         scope.launch { repository.observeAndCache() }
 
-        val nonDefault = Settings(true, 30, true, true)
+        val nonDefault = Settings(true, 30, true, true, true)
         store.update { nonDefault }
 
         awaitCurrent(nonDefault)

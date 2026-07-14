@@ -64,6 +64,7 @@ fun EinstellungenScreen(modifier: Modifier = Modifier, viewModel: EinstellungenV
             onPseudonymiseToggled = viewModel::onPseudonymiseToggled,
             onNotifyToggled = viewModel::onNotifyOnBlockToggled,
             onRetentionSelected = viewModel::onRetentionDaysSelected,
+            onLogAllowedToggled = viewModel::onLogAllowedCallsToggled,
             onOpenRepo = {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(repoUrl)))
             },

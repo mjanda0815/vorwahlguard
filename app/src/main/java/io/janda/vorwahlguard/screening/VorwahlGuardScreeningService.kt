@@ -136,6 +136,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         var decision: ScreeningDecision? = null
         var screenedNumber: PhoneNumber? = null
+        var logAllowedCalls = false
 
         val response = try {
             // The call that triggered the bind may arrive before startCacheWarming() finished;
@@ -153,6 +154,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
             screenedNumber = number
 
             val settings = settingsCache.current()
+            logAllowedCalls = settings.logAllowedCalls()
             val isContact = settings.contactsBypassEnabled() &&
                 number.isKnown() &&
                 contactsLookup.isKnownContact(number)
@@ -175,14 +177,17 @@ class VorwahlGuardScreeningService : CallScreeningService() {
         respondToCall(callDetails, response)
 
         // Recording only happens after respondToCall() has already been invoked (CLAUDE.md §3
-        // rule 1, docs/ARCHITECTURE.md), and only for a decision a rule actually fired for — a
-        // contact bypass or a "no match" allow records nothing (ADR 0006, CLAUDE.md §4 rule 3).
+        // rule 1, docs/ARCHITECTURE.md), and by default only for a decision a rule actually fired
+        // for — a contact bypass or a "no match" allow records nothing (ADR 0006, CLAUDE.md §4
+        // rule 3). Issue #59 / ADR 0014 adds an opt-in [io.janda.vorwahlguard.domain.model.Settings.logAllowedCalls]
+        // (default off) that also records those allowed calls, carrying a null matchedRuleId and
+        // the decision's [io.janda.vorwahlguard.domain.model.DecisionReason] instead.
         // recorder.record() is itself fire-and-forget on the app's own [io.janda.vorwahlguard.di.ApplicationScope]
         // (RoomCallEventRecorder does zero I/O on the calling thread), so this call is direct —
         // no separate serviceScope.launch wrapper needed here.
         val finalDecision = decision
         val finalNumber = screenedNumber
-        if (finalDecision != null && finalDecision.matched() && finalNumber != null) {
+        if (finalDecision != null && finalNumber != null && (finalDecision.matched() || logAllowedCalls)) {
             runCatching {
                 recorder.record(
                     CallEvent(
@@ -192,6 +197,7 @@ class VorwahlGuardScreeningService : CallScreeningService() {
                         finalNumber.region() ?: UNKNOWN_REGION_CODE,
                         finalDecision.matchedRuleId(),
                         finalDecision.action(),
+                        finalDecision.reason(),
                     ),
                 )
             }

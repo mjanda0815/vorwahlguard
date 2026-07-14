@@ -7,6 +7,8 @@ import io.janda.vorwahlguard.data.contacts.CachedContactsLookup
 import io.janda.vorwahlguard.data.events.RetentionPurger
 import io.janda.vorwahlguard.data.rules.CachedRuleRepository
 import io.janda.vorwahlguard.data.settings.CachedSettingsRepository
+import io.janda.vorwahlguard.domain.model.CallEvent
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.PhoneNumber
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.model.ScreeningDecision
@@ -21,6 +23,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
@@ -63,7 +66,7 @@ class VorwahlGuardScreeningServiceTest {
     /** Every [respondToCall] the service issues, in order, for count and flag assertions. */
     private val responses = mutableListOf<CallResponse>()
 
-    private val defaultSettings = Settings(false, 90, false, false)
+    private val defaultSettings = Settings(false, 90, false, false, false)
 
     @Before
     fun setUp() {
@@ -296,7 +299,7 @@ class VorwahlGuardScreeningServiceTest {
     @Test
     fun `contacts bypass consults the rule engine with isKnownContact true`() {
         val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
-        every { settingsCache.current() } returns Settings(true, 90, false, false)
+        every { settingsCache.current() } returns Settings(true, 90, false, false, false)
         every { normalizer.normalize(any(), any()) } returns number
         every { contactsLookup.isKnownContact(number) } returns true
         every { screenIncomingCall.decide(number, true, Instant.EPOCH) } returns
@@ -306,5 +309,71 @@ class VorwahlGuardScreeningServiceTest {
 
         verify(exactly = 1) { screenIncomingCall.decide(number, true, Instant.EPOCH) }
         assertEquals(1, responses.size)
+    }
+
+    @Test
+    fun `contact bypass with logAllowedCalls on records a reason-only event`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { settingsCache.current() } returns Settings(true, 90, false, false, true)
+        every { normalizer.normalize(any(), any()) } returns number
+        every { contactsLookup.isKnownContact(number) } returns true
+        every { screenIncomingCall.decide(number, true, Instant.EPOCH) } returns
+            ScreeningDecision.contactBypass()
+        val captured = slot<CallEvent>()
+        every { recorder.record(capture(captured)) } just Runs
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        verify(exactly = 1) { recorder.record(any()) }
+        assertEquals(null, captured.captured.matchedRuleId())
+        assertEquals(DecisionReason.CONTACT_BYPASS, captured.captured.reason())
+        assertEquals(RuleAction.ALLOW, captured.captured.action())
+    }
+
+    @Test
+    fun `no matching rule with logAllowedCalls on records a NO_MATCH event`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { settingsCache.current() } returns Settings(false, 90, false, false, true)
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(any(), any(), any()) } returns ScreeningDecision.allow()
+        val captured = slot<CallEvent>()
+        every { recorder.record(capture(captured)) } just Runs
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        verify(exactly = 1) { recorder.record(any()) }
+        assertEquals(null, captured.captured.matchedRuleId())
+        assertEquals(DecisionReason.NO_MATCH, captured.captured.reason())
+    }
+
+    @Test
+    fun `logAllowedCalls off records nothing for contact bypass or no match`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { settingsCache.current() } returns Settings(true, 90, false, false, false)
+        every { normalizer.normalize(any(), any()) } returns number
+        every { contactsLookup.isKnownContact(number) } returns true
+        every { screenIncomingCall.decide(number, true, Instant.EPOCH) } returns
+            ScreeningDecision.contactBypass()
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        verify(exactly = 0) { recorder.record(any()) }
+    }
+
+    @Test
+    fun `a matched decision is recorded regardless of logAllowedCalls`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        every { settingsCache.current() } returns Settings(false, 90, false, false, false)
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(any(), any(), any()) } returns
+            ScreeningDecision(RuleAction.BLOCK, "rule-block")
+        val captured = slot<CallEvent>()
+        every { recorder.record(capture(captured)) } just Runs
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        verify(exactly = 1) { recorder.record(any()) }
+        assertEquals("rule-block", captured.captured.matchedRuleId())
+        assertEquals(DecisionReason.RULE_MATCH, captured.captured.reason())
     }
 }

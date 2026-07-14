@@ -70,7 +70,7 @@ class RetentionPurgerTest {
 
     @Test
     fun `a non-default retention_days setting is honored`() = runBlocking {
-        val settingsStore = settingsStoreWith(Settings(false, 30, false, false))
+        val settingsStore = settingsStoreWith(Settings(false, 30, false, false, false))
         val cutoff = now.minus(30, ChronoUnit.DAYS)
         dao.insert(eventAt(id = "exactly-at-cutoff", occurredAt = cutoff))
         // 45 days old: would have survived the default 90-day retention, but not this 30-day one.
@@ -101,5 +101,6 @@ class RetentionPurgerTest {
         regionCode = "AT",
         matchedRuleId = "rule-1",
         action = "BLOCK",
+        reason = "RULE_MATCH",
     )
 }

@@ -42,6 +42,7 @@ class SettingsStore @Inject constructor(
             prefs[RETENTION_DAYS] = next.retentionDays()
             prefs[PSEUDONYMISE_NUMBERS] = next.pseudonymiseNumbers()
             prefs[NOTIFY_ON_BLOCK] = next.notifyOnBlock()
+            prefs[LOG_ALLOWED_CALLS] = next.logAllowedCalls()
         }
     }
 
@@ -49,12 +50,13 @@ class SettingsStore @Inject constructor(
         val defaults = Settings.defaults()
         // core-domain is not compiled with -parameters, so named arguments are not available
         // here; order matches Settings' canonical constructor: contactsBypassEnabled,
-        // retentionDays, pseudonymiseNumbers, notifyOnBlock.
+        // retentionDays, pseudonymiseNumbers, notifyOnBlock, logAllowedCalls.
         return Settings(
             this[CONTACTS_BYPASS_ENABLED] ?: defaults.contactsBypassEnabled(),
             this[RETENTION_DAYS] ?: defaults.retentionDays(),
             this[PSEUDONYMISE_NUMBERS] ?: defaults.pseudonymiseNumbers(),
             this[NOTIFY_ON_BLOCK] ?: defaults.notifyOnBlock(),
+            this[LOG_ALLOWED_CALLS] ?: defaults.logAllowedCalls(),
         )
     }
 
@@ -63,5 +65,6 @@ class SettingsStore @Inject constructor(
         val RETENTION_DAYS = intPreferencesKey("retention_days")
         val PSEUDONYMISE_NUMBERS = booleanPreferencesKey("pseudonymise_numbers")
         val NOTIFY_ON_BLOCK = booleanPreferencesKey("notify_on_block")
+        val LOG_ALLOWED_CALLS = booleanPreferencesKey("log_allowed_calls")
     }
 }

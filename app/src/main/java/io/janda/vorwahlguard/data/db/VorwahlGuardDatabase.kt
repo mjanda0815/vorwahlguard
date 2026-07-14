@@ -10,7 +10,7 @@ import io.janda.vorwahlguard.data.rules.RuleEntity
 
 @Database(
     entities = [RuleEntity::class, CallEventEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

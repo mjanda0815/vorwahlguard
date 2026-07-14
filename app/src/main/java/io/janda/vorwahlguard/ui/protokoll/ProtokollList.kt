@@ -97,6 +97,13 @@ private fun CallEventRow(row: CallEventRowUi) {
                 text = stringResource(row.action.labelRes()),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (row.allowReason != null) {
+                Text(
+                    text = stringResource(row.allowReason.labelRes()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Text(
                 text = row.timestampText,
                 style = MaterialTheme.typography.bodySmall,
@@ -104,6 +111,11 @@ private fun CallEventRow(row: CallEventRowUi) {
             )
         }
     }
+}
+
+private fun AllowReasonUi.labelRes(): Int = when (this) {
+    AllowReasonUi.CONTACT_BYPASS -> R.string.log_reason_contact
+    AllowReasonUi.NO_MATCH -> R.string.log_reason_no_rule
 }
 
 @Composable

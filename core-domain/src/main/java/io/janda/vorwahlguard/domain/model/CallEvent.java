@@ -9,6 +9,11 @@ import java.util.Objects;
  * depending on {@link Settings#pseudonymiseNumbers()}; that choice is made by the {@code :app}
  * adapter, not here (CLAUDE.md §12).
  *
+ * <p>{@code matchedRuleId} is nullable: it is only set when {@code reason ==
+ * DecisionReason.RULE_MATCH}. A contact bypass or a no-matching-rule allow (issue #59,
+ * ADR 0014 — logged only when {@link Settings#logAllowedCalls()} is on) carries a {@code null}
+ * {@code matchedRuleId} and the corresponding {@link DecisionReason}.
+ *
  * <p>Plain class, not a {@code record} — see {@link Settings}'s class doc for why.
  */
 public final class CallEvent {
@@ -19,6 +24,7 @@ public final class CallEvent {
     private final String regionCode;
     private final String matchedRuleId;
     private final RuleAction action;
+    private final DecisionReason reason;
 
     public CallEvent(
             String id,
@@ -26,13 +32,15 @@ public final class CallEvent {
             String numberOrHash,
             String regionCode,
             String matchedRuleId,
-            RuleAction action) {
+            RuleAction action,
+            DecisionReason reason) {
         this.id = id;
         this.occurredAt = occurredAt;
         this.numberOrHash = numberOrHash;
         this.regionCode = regionCode;
         this.matchedRuleId = matchedRuleId;
         this.action = action;
+        this.reason = reason;
     }
 
     public String id() {
@@ -51,12 +59,17 @@ public final class CallEvent {
         return regionCode;
     }
 
+    /** Nullable — see class doc. */
     public String matchedRuleId() {
         return matchedRuleId;
     }
 
     public RuleAction action() {
         return action;
+    }
+
+    public DecisionReason reason() {
+        return reason;
     }
 
     @Override
@@ -68,12 +81,13 @@ public final class CallEvent {
                 && Objects.equals(numberOrHash, other.numberOrHash)
                 && Objects.equals(regionCode, other.regionCode)
                 && Objects.equals(matchedRuleId, other.matchedRuleId)
-                && action == other.action;
+                && action == other.action
+                && reason == other.reason;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, occurredAt, numberOrHash, regionCode, matchedRuleId, action);
+        return Objects.hash(id, occurredAt, numberOrHash, regionCode, matchedRuleId, action, reason);
     }
 
     @Override
@@ -84,6 +98,7 @@ public final class CallEvent {
                 + ", regionCode=" + regionCode
                 + ", matchedRuleId=" + matchedRuleId
                 + ", action=" + action
+                + ", reason=" + reason
                 + "]";
     }
 }

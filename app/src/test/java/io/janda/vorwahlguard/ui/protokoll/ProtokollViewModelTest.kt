@@ -3,6 +3,7 @@ package io.janda.vorwahlguard.ui.protokoll
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.events.CallEventEntity
 import io.janda.vorwahlguard.domain.model.Country
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.ui.regeln.addrule.MainDispatcherRule
@@ -56,6 +57,7 @@ class ProtokollViewModelTest {
         "DE",
         "rule-block",
         RuleAction.BLOCK.name,
+        DecisionReason.RULE_MATCH.name,
     )
     private val silenceRow = CallEventEntity(
         "silence-1",
@@ -65,6 +67,7 @@ class ProtokollViewModelTest {
         "AT",
         "rule-silence",
         RuleAction.SILENCE.name,
+        DecisionReason.RULE_MATCH.name,
     )
     private val allowRow = CallEventEntity(
         "allow-1",
@@ -74,6 +77,7 @@ class ProtokollViewModelTest {
         "AT",
         "rule-allow",
         RuleAction.ALLOW.name,
+        DecisionReason.RULE_MATCH.name,
     )
 
     @Before

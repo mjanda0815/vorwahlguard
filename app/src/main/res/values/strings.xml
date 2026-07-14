@@ -57,10 +57,12 @@
     <!-- Protokoll (issue #25) -->
     <string name="log_filter_all">All</string>
     <string name="log_empty_title">No screened calls yet</string>
-    <string name="log_empty_body">Blocked and silenced calls appear here.</string>
+    <string name="log_empty_body">Screened calls appear here.</string>
     <string name="log_empty_filtered_title">No calls for this filter</string>
     <string name="log_empty_filtered_body">No screened call matches the selected action.</string>
     <string name="log_region_unknown">Unknown region</string>
+    <string name="log_reason_contact">Contact</string>
+    <string name="log_reason_no_rule">No matching rule</string>
 
     <!-- Übersicht (issue #27) -->
     <string name="overview_hero_label">Calls screened</string>
@@ -74,6 +76,7 @@
     <string name="overview_role_warning_title">Call screening is not active</string>
     <string name="overview_role_warning_body">VorwahlGuard needs to be your call screening app to block or silence calls.</string>
     <string name="overview_role_warning_button">Enable call screening</string>
+    <string name="overview_breakdown_title">Breakdown by action</string>
 
     <!-- Einstellungen (issue #29) -->
     <string name="settings_role_section_title">Call screening</string>
@@ -92,6 +95,8 @@
     <string name="settings_pseudonymise_body">Store a salted hash instead of the number in the call log. Statistics still work; the number can no longer be shown.</string>
     <string name="settings_notify_title">Notify on block</string>
     <string name="settings_notify_body">Show a system notification when a call is blocked.</string>
+    <string name="settings_log_allowed_title">Log allowed calls</string>
+    <string name="settings_log_allowed_body">Also record calls that were allowed — because the caller is a contact or no rule matched — in the log. Off by default.</string>
     <string name="settings_about_section_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_license">License: MIT</string>

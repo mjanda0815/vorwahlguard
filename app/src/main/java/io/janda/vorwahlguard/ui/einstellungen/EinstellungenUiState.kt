@@ -17,6 +17,7 @@ data class EinstellungenUiState(
     val contactsBypassEnabled: Boolean = false,
     val pseudonymiseNumbers: Boolean = false,
     val notifyOnBlock: Boolean = false,
+    val logAllowedCalls: Boolean = false,
     val retentionDays: Int = 90,
     val contactsPermissionDenied: Boolean = false,
     val appVersion: String = "",

@@ -33,7 +33,7 @@ public final class ScreenIncomingCallService implements ScreenIncomingCall {
     @Override
     public ScreeningDecision decide(PhoneNumber number, boolean isKnownContact, Instant at) {
         if (isKnownContact) {
-            return ScreeningDecision.allow();
+            return ScreeningDecision.contactBypass();
         }
         return ruleMatcher.match(ruleRepository.activeRules(), number);
     }
