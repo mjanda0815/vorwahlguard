@@ -1,11 +1,9 @@
 package io.janda.vorwahlguard.ui.regeln.addrule
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -67,39 +65,44 @@ fun AddRuleSheet(
         sheetState = sheetState,
         modifier = modifier,
     ) {
-        Column(
+        // A single LazyColumn drives every scroll in this sheet, including the country list —
+        // never nest a LazyColumn inside a Modifier.verticalScroll(...) Column, Compose throws
+        // at layout time (only on a real measure pass, so a plain unit test won't catch it; see
+        // AddRuleSheetLayoutTest).
+        LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 16.dp)
-                .verticalScroll(rememberScrollState())
                 .imePadding(),
         ) {
-            Text(
-                text = stringResource(R.string.add_rule_title),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 16.dp),
-            )
+            item {
+                Text(
+                    text = stringResource(R.string.add_rule_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
 
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                SegmentedButton(
-                    selected = uiState.tab == AddRuleTab.COUNTRY,
-                    onClick = { viewModel.selectTab(AddRuleTab.COUNTRY) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                ) {
-                    Text(stringResource(R.string.add_rule_tab_country))
-                }
-                SegmentedButton(
-                    selected = uiState.tab == AddRuleTab.PREFIX,
-                    onClick = { viewModel.selectTab(AddRuleTab.PREFIX) },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                ) {
-                    Text(stringResource(R.string.add_rule_tab_prefix))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = uiState.tab == AddRuleTab.COUNTRY,
+                        onClick = { viewModel.selectTab(AddRuleTab.COUNTRY) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) {
+                        Text(stringResource(R.string.add_rule_tab_country))
+                    }
+                    SegmentedButton(
+                        selected = uiState.tab == AddRuleTab.PREFIX,
+                        onClick = { viewModel.selectTab(AddRuleTab.PREFIX) },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) {
+                        Text(stringResource(R.string.add_rule_tab_prefix))
+                    }
                 }
             }
 
             when (uiState.tab) {
-                AddRuleTab.COUNTRY -> CountryPickerContent(
+                AddRuleTab.COUNTRY -> countryPickerItems(
                     query = uiState.countryQuery,
                     countries = uiState.countries,
                     selectedCountry = uiState.selectedCountry,
@@ -107,38 +110,41 @@ fun AddRuleSheet(
                     collateral = uiState.collateral,
                     onQueryChange = viewModel::onCountryQueryChanged,
                     onCountrySelected = viewModel::selectCountry,
-                    modifier = Modifier.padding(top = 16.dp),
                 )
 
-                AddRuleTab.PREFIX -> PrefixInputContent(
-                    patternText = uiState.patternText,
-                    patternValid = uiState.patternValid,
-                    duplicate = uiState.duplicate,
-                    testInput = uiState.testInput,
-                    testOutcome = uiState.testOutcome,
-                    onPatternTextChange = viewModel::onPatternTextChanged,
-                    onTestInputChange = viewModel::onTestInputChanged,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
+                AddRuleTab.PREFIX -> item {
+                    PrefixInputContent(
+                        patternText = uiState.patternText,
+                        patternValid = uiState.patternValid,
+                        duplicate = uiState.duplicate,
+                        testInput = uiState.testInput,
+                        testOutcome = uiState.testOutcome,
+                        onPatternTextChange = viewModel::onPatternTextChanged,
+                        onTestInputChange = viewModel::onTestInputChanged,
+                        modifier = Modifier.padding(top = 16.dp),
+                    )
+                }
             }
 
-            ActionPicker(
-                selected = uiState.selectedAction,
-                recommended = uiState.recommendedAction,
-                onSelect = viewModel::selectAction,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-            )
+            item {
+                ActionPicker(
+                    selected = uiState.selectedAction,
+                    recommended = uiState.recommendedAction,
+                    onSelect = viewModel::selectAction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                )
 
-            Button(
-                onClick = { viewModel.save() },
-                enabled = uiState.saveEnabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-            ) {
-                Text(stringResource(R.string.add_rule_save))
+                Button(
+                    onClick = { viewModel.save() },
+                    enabled = uiState.saveEnabled,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                ) {
+                    Text(stringResource(R.string.add_rule_save))
+                }
             }
         }
     }
