@@ -1,5 +1,6 @@
 package io.janda.vorwahlguard.ui.protokoll
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,10 +13,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,31 +30,76 @@ import io.janda.vorwahlguard.ui.regeln.addrule.labelRes
 
 private val FILTER_OPTIONS: List<RuleAction?> = listOf(null, RuleAction.BLOCK, RuleAction.SILENCE, RuleAction.ALLOW)
 
+/** The actions offered when creating a rule from a log entry (issue #76), in table order (§5). */
+private val CREATE_RULE_ACTIONS = listOf(RuleAction.BLOCK, RuleAction.SILENCE, RuleAction.ALLOW)
+
 /**
  * Stateless Protokoll list body (issue #25): an action filter row, then either the empty state or
  * a reverse-chronological [LazyColumn] — mirrors [io.janda.vorwahlguard.ui.regeln.RuleListContent]'s
- * private-sub-composable style. No swipe-to-delete: log rows are not user-deletable.
+ * private-sub-composable style. No swipe-to-delete: log rows are not user-deletable. Tapping a row
+ * whose caller yields a pattern opens the create-rule action picker (issue #76).
  */
 @Composable
 fun ProtokollListContent(
     state: ProtokollUiState,
     onFilterSelect: (RuleAction?) -> Unit,
     modifier: Modifier = Modifier,
+    onRowClick: (CallEventRowUi) -> Unit = {},
+    onCreateRule: (RuleAction) -> Unit = {},
+    onDismissPendingRule: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         FilterRow(state.selectedFilter, onFilterSelect)
 
         if (state.loaded && state.events.isEmpty()) {
             EmptyLog(hasAnyEvents = state.hasAnyEvents, modifier = Modifier.fillMaxSize())
-            return@Column
-        }
-
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(state.events, key = { it.id }) { row ->
-                CallEventRow(row)
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(state.events, key = { it.id }) { row ->
+                    CallEventRow(row, onClick = { onRowClick(row) })
+                }
             }
         }
     }
+
+    state.pendingRule?.let { pending ->
+        CreateRuleDialog(
+            pending = pending,
+            onSelect = onCreateRule,
+            onDismiss = onDismissPendingRule,
+        )
+    }
+}
+
+@Composable
+private fun CreateRuleDialog(pending: PendingRule, onSelect: (RuleAction) -> Unit, onDismiss: () -> Unit) {
+    val callerLabel = pending.numberLabel ?: stringResource(R.string.rules_private_label)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.protokoll_create_rule_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.protokoll_create_rule_body, callerLabel))
+                CREATE_RULE_ACTIONS.forEach { action ->
+                    TextButton(
+                        onClick = { onSelect(action) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = stringResource(action.labelRes()),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.protokoll_create_rule_cancel))
+            }
+        },
+    )
 }
 
 @Composable
@@ -74,11 +122,16 @@ private fun FilterRow(selected: RuleAction?, onFilterSelect: (RuleAction?) -> Un
 }
 
 @Composable
-private fun CallEventRow(row: CallEventRowUi) {
+private fun CallEventRow(row: CallEventRowUi, onClick: () -> Unit) {
+    // Only a row a rule can be built from is clickable — a pseudonymised row exposes no number
+    // (issue #76), so tapping it would have nothing to act on.
+    val rowModifier = if (row.rulePattern != null) {
+        Modifier.fillMaxWidth().clickable(onClick = onClick)
+    } else {
+        Modifier.fillMaxWidth()
+    }
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = rowModifier.padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

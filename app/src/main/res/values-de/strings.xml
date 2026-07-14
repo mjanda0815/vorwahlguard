@@ -61,6 +61,11 @@
     <string name="log_empty_filtered_title">Keine Anrufe für diesen Filter</string>
     <string name="log_empty_filtered_body">Kein erfasster Anruf entspricht der gewählten Aktion.</string>
     <string name="log_region_unknown">Unbekanntes Gebiet</string>
+    <string name="protokoll_create_rule_title">Regel erstellen</string>
+    <string name="protokoll_create_rule_body">Regel für %1$s erstellen:</string>
+    <string name="protokoll_create_rule_cancel">Abbrechen</string>
+    <string name="protokoll_create_rule_created">Regel erstellt: %1$s</string>
+    <string name="protokoll_create_rule_exists">Für diesen Anrufer existiert bereits eine Regel.</string>
     <string name="log_reason_contact">Kontakt</string>
     <string name="log_reason_no_rule">Keine passende Regel</string>
 

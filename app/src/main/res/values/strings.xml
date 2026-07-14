@@ -63,6 +63,11 @@
     <string name="log_empty_filtered_title">No calls for this filter</string>
     <string name="log_empty_filtered_body">No screened call matches the selected action.</string>
     <string name="log_region_unknown">Unknown region</string>
+    <string name="protokoll_create_rule_title">Create rule</string>
+    <string name="protokoll_create_rule_body">Create a rule for %1$s:</string>
+    <string name="protokoll_create_rule_cancel">Cancel</string>
+    <string name="protokoll_create_rule_created">Rule created: %1$s</string>
+    <string name="protokoll_create_rule_exists">A rule for this caller already exists.</string>
     <string name="log_reason_contact">Contact</string>
     <string name="log_reason_no_rule">No matching rule</string>
 

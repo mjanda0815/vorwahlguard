@@ -2,16 +2,27 @@ package io.janda.vorwahlguard.ui.protokoll
 
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.events.CallEventEntity
+import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
+import io.janda.vorwahlguard.data.rules.RuleWriter
 import io.janda.vorwahlguard.domain.model.Country
 import io.janda.vorwahlguard.domain.model.DecisionReason
+import io.janda.vorwahlguard.domain.model.PatternSyntax
+import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
+import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.ui.regeln.addrule.MainDispatcherRule
+import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import java.time.Instant
 import java.util.Optional
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -44,6 +55,12 @@ class ProtokollViewModelTest {
     private lateinit var eventsFlow: MutableStateFlow<List<CallEventEntity>>
     private lateinit var dao: CallEventDao
     private lateinit var countryCatalog: CountryCatalog
+    private lateinit var rulesFlow: MutableStateFlow<List<Rule>>
+    private lateinit var ruleSnapshotSource: RuleSnapshotSource
+    private lateinit var ruleWriter: RuleWriter
+    private lateinit var clock: Clock
+    private val savedRules = mutableListOf<Rule>()
+    private val fixedInstant: Instant = Instant.parse("2026-07-15T12:00:00Z")
 
     // Fixtures deliberately constructed in an order that would look "wrong" if the view model
     // re-sorted by occurredAt: silenceRow's occurredAt is *newer* than blockRow's, so a
@@ -88,10 +105,21 @@ class ProtokollViewModelTest {
 
         countryCatalog = mockk()
         every { countryCatalog.byIso2("AT") } returns Optional.of(austria)
+
+        rulesFlow = MutableStateFlow(emptyList())
+        ruleSnapshotSource = mockk()
+        every { ruleSnapshotSource.observe() } returns rulesFlow
+
+        ruleWriter = mockk()
+        savedRules.clear()
+        coEvery { ruleWriter.save(capture(savedRules)) } just Runs
+
+        clock = mockk()
+        every { clock.now() } returns fixedInstant
     }
 
     private fun createViewModel(): ProtokollViewModel {
-        return ProtokollViewModel(dao, countryCatalog, dispatcher)
+        return ProtokollViewModel(dao, countryCatalog, ruleSnapshotSource, ruleWriter, clock, dispatcher)
     }
 
     @Test
@@ -196,5 +224,98 @@ class ProtokollViewModelTest {
         val viewModel = createViewModel()
 
         assertTrue(viewModel.uiState.value.loaded)
+    }
+
+    // --- issue #76: create a rule from a log entry ---
+
+    @Test
+    fun `tapping a number row opens the picker with the E164 as the pattern`() = runTest(dispatcher) {
+        eventsFlow.value = listOf(blockRow)
+        val viewModel = createViewModel()
+        val row = viewModel.uiState.value.events.single()
+
+        viewModel.onRowClicked(row)
+
+        val pending = viewModel.uiState.value.pendingRule
+        assertEquals("+4915112345678", pending?.patternText)
+        assertEquals("+4915112345678", pending?.numberLabel)
+    }
+
+    @Test
+    fun `tapping a hashed row is a no-op — no number to build a rule from`() = runTest(dispatcher) {
+        eventsFlow.value = listOf(allowRow) // isHashed = true
+        val viewModel = createViewModel()
+        val row = viewModel.uiState.value.events.single()
+
+        viewModel.onRowClicked(row)
+
+        assertNull(viewModel.uiState.value.pendingRule)
+    }
+
+    @Test
+    fun `tapping a withheld row opens the picker with the PRIVATE pattern and no number label`() = runTest(dispatcher) {
+        val privateRow = blockRow.copy(id = "private-1", numberOrHash = "PRIVATE", isHashed = false)
+        eventsFlow.value = listOf(privateRow)
+        val viewModel = createViewModel()
+        val row = viewModel.uiState.value.events.single()
+
+        viewModel.onRowClicked(row)
+
+        val pending = viewModel.uiState.value.pendingRule
+        assertEquals("PRIVATE", pending?.patternText)
+        assertNull(pending?.numberLabel)
+    }
+
+    @Test
+    fun `creating a rule for a new pattern persists it and emits RuleCreated`() = runTest(dispatcher) {
+        eventsFlow.value = listOf(blockRow)
+        val viewModel = createViewModel()
+        val effects = mutableListOf<ProtokollEffect>()
+        val job = launch { viewModel.effects.toList(effects) }
+        viewModel.onRowClicked(viewModel.uiState.value.events.single())
+
+        viewModel.createRule(RuleAction.BLOCK)
+
+        coVerify(exactly = 1) { ruleWriter.save(any()) }
+        val saved = savedRules.single()
+        assertEquals("+4915112345678", saved.pattern().text())
+        assertEquals(RuleAction.BLOCK, saved.action())
+        assertTrue(saved.enabled())
+        assertEquals(fixedInstant, saved.createdAt())
+        assertEquals(listOf(ProtokollEffect.RuleCreated(RuleAction.BLOCK)), effects)
+        assertNull(viewModel.uiState.value.pendingRule)
+        job.cancel()
+    }
+
+    @Test
+    fun `creating a rule for an existing pattern writes nothing and emits RuleAlreadyExists`() = runTest(dispatcher) {
+        rulesFlow.value = listOf(
+            Rule("existing", PatternSyntax.parse("+4915112345678"), RuleAction.SILENCE, true, null, Instant.EPOCH),
+        )
+        eventsFlow.value = listOf(blockRow)
+        val viewModel = createViewModel()
+        val effects = mutableListOf<ProtokollEffect>()
+        val job = launch { viewModel.effects.toList(effects) }
+        viewModel.onRowClicked(viewModel.uiState.value.events.single())
+
+        viewModel.createRule(RuleAction.ALLOW)
+
+        coVerify(exactly = 0) { ruleWriter.save(any()) }
+        assertEquals(listOf(ProtokollEffect.RuleAlreadyExists), effects)
+        assertNull(viewModel.uiState.value.pendingRule)
+        job.cancel()
+    }
+
+    @Test
+    fun `dismissing the picker clears the pending rule without writing`() = runTest(dispatcher) {
+        eventsFlow.value = listOf(blockRow)
+        val viewModel = createViewModel()
+        viewModel.onRowClicked(viewModel.uiState.value.events.single())
+        assertTrue(viewModel.uiState.value.pendingRule != null)
+
+        viewModel.dismissPendingRule()
+
+        assertNull(viewModel.uiState.value.pendingRule)
+        coVerify(exactly = 0) { ruleWriter.save(any()) }
     }
 }
