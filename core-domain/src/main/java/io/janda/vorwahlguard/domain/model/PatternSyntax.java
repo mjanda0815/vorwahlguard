@@ -17,7 +17,12 @@ package io.janda.vorwahlguard.domain.model;
  */
 public final class PatternSyntax {
 
-    private static final String PRIVATE_TOKEN = "PRIVATE";
+    /**
+     * The reserved withheld-caller-id token (CLAUDE.md §4), public so UI entry points (e.g. the
+     * pinned "Unterdrückte Nummer" row in the country picker, issue #60) reference the canonical
+     * spelling instead of duplicating the literal.
+     */
+    public static final String PRIVATE_TOKEN = "PRIVATE";
     private static final String ANY_TOKEN = "*";
     private static final int MAX_E164_DIGITS = 15;
 

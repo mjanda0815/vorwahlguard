@@ -176,6 +176,53 @@ class AddRuleViewModelTest {
     }
 
     @Test
+    fun `selecting the private rule sets the PRIVATE pattern and recommends silence`() = runTest(dispatcher) {
+        viewModel.selectPrivateRule()
+
+        val state = viewModel.uiState.value
+        assertEquals("PRIVATE", state.patternText)
+        assertTrue(state.patternValid)
+        assertFalse(state.patternMissingWildcard)
+        assertNull(state.selectedCountry)
+        assertNull(state.collateral)
+        assertEquals(RuleAction.SILENCE, state.recommendedAction)
+        assertEquals(RuleAction.SILENCE, state.selectedAction)
+    }
+
+    @Test
+    fun `selecting the private rule after a country replaces the selection`() = runTest(dispatcher) {
+        val at = viewModel.uiState.value.countries.first { it.iso2 == "AT" }
+        viewModel.selectCountry(at)
+        assertEquals("+43*", viewModel.uiState.value.patternText)
+
+        viewModel.selectPrivateRule()
+
+        val state = viewModel.uiState.value
+        assertEquals("PRIVATE", state.patternText)
+        assertNull(state.selectedCountry)
+    }
+
+    @Test
+    fun `a manual action selection survives selecting the private rule`() = runTest(dispatcher) {
+        viewModel.selectAction(RuleAction.BLOCK)
+
+        viewModel.selectPrivateRule()
+
+        val state = viewModel.uiState.value
+        assertEquals(RuleAction.SILENCE, state.recommendedAction)
+        assertEquals(RuleAction.BLOCK, state.selectedAction)
+    }
+
+    @Test
+    fun `typing PRIVATE into the free-text tab also recommends silence`() = runTest(dispatcher) {
+        viewModel.onPatternTextChanged("PRIVATE")
+
+        val state = viewModel.uiState.value
+        assertTrue(state.patternValid)
+        assertEquals(RuleAction.SILENCE, state.recommendedAction)
+    }
+
+    @Test
     fun `a bare known calling code with no wildcard is flagged as missing the wildcard`() = runTest(dispatcher) {
         viewModel.onPatternTextChanged("+43")
 

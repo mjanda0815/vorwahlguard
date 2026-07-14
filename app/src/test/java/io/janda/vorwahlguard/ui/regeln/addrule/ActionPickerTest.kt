@@ -35,6 +35,7 @@ class ActionPickerTest {
     private lateinit var silenceLabel: String
     private lateinit var allowLabel: String
     private lateinit var recommendedHint: String
+    private lateinit var mailboxHint: String
 
     @Before
     fun setUp() {
@@ -43,6 +44,7 @@ class ActionPickerTest {
         silenceLabel = context.getString(R.string.action_silence)
         allowLabel = context.getString(R.string.action_allow)
         recommendedHint = context.getString(R.string.add_rule_silence_recommended)
+        mailboxHint = context.getString(R.string.add_rule_block_mailbox_hint)
     }
 
     private fun setContent(
@@ -110,5 +112,29 @@ class ActionPickerTest {
         composeTestRule.onNodeWithText(silenceLabel).assertIsSelected()
         composeTestRule.onNodeWithText(blockLabel).assertIsNotSelected()
         composeTestRule.onNodeWithText(allowLabel).assertIsNotSelected()
+    }
+
+    @Test
+    fun mailboxHintIsShownWhenBlockIsSelected() {
+        setContent(selected = RuleAction.BLOCK, recommended = RuleAction.BLOCK)
+
+        composeTestRule.onNodeWithText(mailboxHint).assertExists()
+    }
+
+    @Test
+    fun mailboxHintIsHiddenWhenBlockIsNotSelected() {
+        setContent(selected = RuleAction.SILENCE, recommended = RuleAction.SILENCE)
+
+        composeTestRule.onNodeWithText(mailboxHint).assertDoesNotExist()
+    }
+
+    @Test
+    fun mailboxHintAndSilenceRecommendationCanShowTogether() {
+        // A country rule recommends SILENCE, but the user explicitly picked BLOCK: both hints
+        // are relevant at once — the recommendation and what BLOCK actually does.
+        setContent(selected = RuleAction.BLOCK, recommended = RuleAction.SILENCE)
+
+        composeTestRule.onNodeWithText(recommendedHint).assertExists()
+        composeTestRule.onNodeWithText(mailboxHint).assertExists()
     }
 }

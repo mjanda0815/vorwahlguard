@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.janda.vorwahlguard.R
+import io.janda.vorwahlguard.domain.model.PatternSyntax
 import kotlinx.coroutines.launch
 
 /**
@@ -106,10 +107,13 @@ fun AddRuleSheet(
                     query = uiState.countryQuery,
                     countries = uiState.countries,
                     selectedCountry = uiState.selectedCountry,
+                    privateSelected = uiState.selectedCountry == null &&
+                        uiState.patternText == PatternSyntax.PRIVATE_TOKEN,
                     resultingPattern = uiState.patternText,
                     collateral = uiState.collateral,
                     onQueryChange = viewModel::onCountryQueryChanged,
                     onCountrySelected = viewModel::selectCountry,
+                    onPrivateSelected = viewModel::selectPrivateRule,
                 )
 
                 AddRuleTab.PREFIX -> item {

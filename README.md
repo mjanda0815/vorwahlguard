@@ -49,7 +49,7 @@ Die spezifischste Regel gewinnt. Bei Gleichstand schlägt `Zulassen` `Lautlos` s
 
 | | Was passiert |
 |---|---|
-| **Sperren** | Der Anruf wird sofort abgewiesen. Der Anrufer hört ein Besetzt- oder Ablehnungssignal. |
+| **Sperren** | Der Anruf wird sofort abgewiesen. Der Anrufer hört ein Besetzt- oder Ablehnungssignal — oder landet direkt in deiner Mailbox, falls eine eingerichtet ist (die Umleitung macht dein Mobilfunkanbieter, wie beim manuellen Wegdrücken). |
 | **Lautlos** | Das Telefon klingelt nicht. Der Anruf erscheint weiterhin im Anrufprotokoll und landet in der Mailbox, falls der Anrufer wartet. |
 | **Zulassen** | Ein Whitelist-Eintrag. Schlägt jede ebenfalls zutreffende Sperrregel. |
 
@@ -80,7 +80,8 @@ Regeln überhaupt herangezogen werden.
 - **Whitelist/Blacklist auf einen Blick** — die Regeln-Liste gruppiert exakte `Zulassen`-Einträge
   als Whitelist und alles andere als Blacklist, dieselben zugrunde liegenden Regeln, keine
   getrennte Speicherung; eine Regel zum Löschen wegwischen
-- **Unterdrückte Nummern** — ein eigenes `PRIVATE`-Token für Anrufe ohne Anrufer-ID
+- **Unterdrückte Nummern** — ein eigenes `PRIVATE`-Token für Anrufe ohne Anrufer-ID, direkt
+  als angepinnter Eintrag in der Länderauswahl wählbar
 - **Kontakte-Whitelist** — optional jeden in deinem Adressbuch von jeder Sperrregel ausnehmen,
   lokal ausgewertet mit bedingungsloser Priorität
 - **Ehrlich bei Mehrdeutigkeit** — `+1` ist nicht „die USA", sondern die USA, Kanada und zwanzig
