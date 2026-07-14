@@ -9,6 +9,17 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
+// versionCode as the git commit count: every commit produces a new, strictly increasing build
+// number with no manual bookkeeping — the previous hardcoded `1` never changed across installs,
+// so the About section always showed "Build 1" no matter how many times the app was rebuilt.
+// Requires full git history (CI's actions/checkout defaults to a shallow, single-commit clone —
+// harmless there today since CI only assembles a debug APK for verification, never installs or
+// distributes it; a real release build must be produced locally, where the full history is
+// present, not from that shallow CI checkout).
+val gitCommitCount: Int = providers.exec {
+    commandLine("git", "rev-list", "--count", "HEAD")
+}.standardOutput.asText.get().trim().toInt()
+
 android {
     namespace = "io.janda.vorwahlguard"
     compileSdk = libs.versions.compileSdk.get().toInt()
@@ -17,8 +28,8 @@ android {
         applicationId = "io.janda.vorwahlguard"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = gitCommitCount
+        versionName = "0.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
