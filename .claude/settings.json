@@ -35,7 +35,7 @@
       "Edit(.github/workflows/**)",
       "Edit(app/src/main/AndroidManifest.xml)"
     ],
-    "defaultMode": "default"
+    "defaultMode": "bypassPermissions"
   },
   "model": "opusplan"
 }
