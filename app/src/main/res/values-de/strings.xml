@@ -93,4 +93,5 @@
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_license">Lizenz: MIT</string>
     <string name="settings_about_repo">Quellcode</string>
+    <string name="settings_about_copyright">© %1$d Martin Janda</string>
 </resources>

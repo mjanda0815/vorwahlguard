@@ -46,7 +46,8 @@ class EinstellungenViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(
         EinstellungenUiState(
-            appVersion = appInfoProvider.versionName(),
+            appVersion = appInfoProvider.displayVersion(),
+            copyrightYear = appInfoProvider.copyrightYear(),
             roleAvailable = roleProvider.isRoleAvailable(),
             roleHeld = roleProvider.isRoleHeld(),
         ),

@@ -91,7 +91,7 @@ fun EinstellungenContent(
             onCheckedChange = onNotifyToggled,
             modifier = Modifier.padding(bottom = 24.dp),
         )
-        AboutSection(appVersion = state.appVersion, onOpenRepo = onOpenRepo)
+        AboutSection(appVersion = state.appVersion, copyrightYear = state.copyrightYear, onOpenRepo = onOpenRepo)
     }
 }
 
@@ -264,7 +264,12 @@ private fun ToggleRow(
 }
 
 @Composable
-private fun AboutSection(appVersion: String, onOpenRepo: () -> Unit, modifier: Modifier = Modifier) {
+private fun AboutSection(
+    appVersion: String,
+    copyrightYear: Int,
+    onOpenRepo: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier.fillMaxWidth()) {
         SectionTitle(stringResource(R.string.settings_about_section_title))
         Text(
@@ -282,5 +287,11 @@ private fun AboutSection(appVersion: String, onOpenRepo: () -> Unit, modifier: M
         TextButton(onClick = onOpenRepo, modifier = Modifier.padding(top = 4.dp)) {
             Text(stringResource(R.string.settings_about_repo))
         }
+        Text(
+            text = stringResource(R.string.settings_about_copyright, copyrightYear),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }

@@ -96,4 +96,5 @@
     <string name="settings_about_license">License: MIT</string>
     <string name="settings_about_repo">Source code</string>
     <string name="settings_about_repo_url" translatable="false">https://github.com/mjanda0815/vorwahlguard</string>
+    <string name="settings_about_copyright">© %1$d Martin Janda</string>
 </resources>
