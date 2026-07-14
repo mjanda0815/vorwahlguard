@@ -11,7 +11,7 @@ agp = "9.2.0"
 # KGP that AGP bundles (2.3.10). KSP 2.3.9 is the latest KSP2 (decoupled versioning) and
 # pairs with Kotlin 2.3.x.
 kotlin = "2.3.10"
-ksp = "2.3.9"
+ksp = "2.3.10"
 
 # --- Android SDK levels ---
 minSdk = "29"        # RoleManager.ROLE_CALL_SCREENING + setSilenceCall (CLAUDE.md §2)
