@@ -66,6 +66,7 @@ class EinstellungenViewModel @Inject constructor(
                         contactsBypassEnabled = settings.contactsBypassEnabled(),
                         pseudonymiseNumbers = settings.pseudonymiseNumbers(),
                         notifyOnBlock = settings.notifyOnBlock(),
+                        logAllowedCalls = settings.logAllowedCalls(),
                         retentionDays = settings.retentionDays(),
                     )
                 }
@@ -112,19 +113,33 @@ class EinstellungenViewModel @Inject constructor(
 
     fun onPseudonymiseToggled(value: Boolean) {
         viewModelScope.launch {
-            settingsStore.update { Settings(it.contactsBypassEnabled(), it.retentionDays(), value, it.notifyOnBlock()) }
+            settingsStore.update {
+                Settings(it.contactsBypassEnabled(), it.retentionDays(), value, it.notifyOnBlock(), it.logAllowedCalls())
+            }
         }
     }
 
     fun onNotifyOnBlockToggled(value: Boolean) {
         viewModelScope.launch {
-            settingsStore.update { Settings(it.contactsBypassEnabled(), it.retentionDays(), it.pseudonymiseNumbers(), value) }
+            settingsStore.update {
+                Settings(it.contactsBypassEnabled(), it.retentionDays(), it.pseudonymiseNumbers(), value, it.logAllowedCalls())
+            }
         }
     }
 
     fun onRetentionDaysSelected(days: Int) {
         viewModelScope.launch {
-            settingsStore.update { Settings(it.contactsBypassEnabled(), days, it.pseudonymiseNumbers(), it.notifyOnBlock()) }
+            settingsStore.update {
+                Settings(it.contactsBypassEnabled(), days, it.pseudonymiseNumbers(), it.notifyOnBlock(), it.logAllowedCalls())
+            }
+        }
+    }
+
+    fun onLogAllowedCallsToggled(value: Boolean) {
+        viewModelScope.launch {
+            settingsStore.update {
+                Settings(it.contactsBypassEnabled(), it.retentionDays(), it.pseudonymiseNumbers(), it.notifyOnBlock(), value)
+            }
         }
     }
 
@@ -140,8 +155,15 @@ class EinstellungenViewModel @Inject constructor(
     /**
      * core-domain is not compiled with `-parameters`, so named arguments are not available here —
      * order matches [Settings]' canonical constructor: `contactsBypassEnabled, retentionDays,
-     * pseudonymiseNumbers, notifyOnBlock` (same order [SettingsStore] itself relies on).
+     * pseudonymiseNumbers, notifyOnBlock, logAllowedCalls` (same order [SettingsStore] itself
+     * relies on).
      */
     private fun withContactsBypass(current: Settings, value: Boolean) =
-        Settings(value, current.retentionDays(), current.pseudonymiseNumbers(), current.notifyOnBlock())
+        Settings(
+            value,
+            current.retentionDays(),
+            current.pseudonymiseNumbers(),
+            current.notifyOnBlock(),
+            current.logAllowedCalls(),
+        )
 }
