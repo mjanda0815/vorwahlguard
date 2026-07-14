@@ -7,6 +7,7 @@ import androidx.room.Room
 import io.janda.vorwahlguard.data.db.VorwahlGuardDatabase
 import io.janda.vorwahlguard.data.settings.SettingsStore
 import io.janda.vorwahlguard.domain.model.CallEvent
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.model.Settings
 import io.mockk.coEvery
@@ -70,7 +71,7 @@ class RoomCallEventRecorderTest {
 
     @Test
     fun `pseudonymisation off stores the raw number with isHashed false`() {
-        val (recorder, job, _) = recorderWith(Settings(false, 90, false, false), dao)
+        val (recorder, job, _) = recorderWith(Settings(false, 90, false, false, false), dao)
         val event = event(numberOrHash = "+431234567")
 
         recorder.record(event)
@@ -83,7 +84,7 @@ class RoomCallEventRecorderTest {
 
     @Test
     fun `pseudonymisation on stores the sha256 hash with isHashed true and plain metadata`() {
-        val (recorder, job, _) = recorderWith(Settings(false, 90, true, false), dao)
+        val (recorder, job, _) = recorderWith(Settings(false, 90, true, false, false), dao)
         val event = event(numberOrHash = "+431234567", regionCode = "AT", matchedRuleId = "rule-1", action = RuleAction.BLOCK)
 
         recorder.record(event)
@@ -100,7 +101,7 @@ class RoomCallEventRecorderTest {
 
     @Test
     fun `a PRIVATE placeholder is stored raw even when pseudonymisation is on`() {
-        val (recorder, job, _) = recorderWith(Settings(false, 90, true, false), dao)
+        val (recorder, job, _) = recorderWith(Settings(false, 90, true, false, false), dao)
         val event = event(numberOrHash = "PRIVATE")
 
         recorder.record(event)
@@ -112,10 +113,32 @@ class RoomCallEventRecorderTest {
     }
 
     @Test
+    fun `a reason-only event stores a NULL matched_rule_id and the reason, hashed when pseudonymisation is on`() {
+        val (recorder, job, _) = recorderWith(Settings(false, 90, true, false, true), dao)
+        val event = event(
+            numberOrHash = "+431234567",
+            matchedRuleId = null,
+            action = RuleAction.ALLOW,
+            reason = DecisionReason.NO_MATCH,
+        )
+
+        recorder.record(event)
+        awaitCompletion(job)
+
+        val expectedHash = runBlocking { NumberPseudonymiser.hash("+431234567", saltProvider.salt()) }
+        val stored = singleStoredEvent()
+        assertEquals(expectedHash, stored.numberOrHash)
+        assertTrue(stored.isHashed)
+        assertEquals(null, stored.matchedRuleId)
+        assertEquals("ALLOW", stored.action)
+        assertEquals("NO_MATCH", stored.reason)
+    }
+
+    @Test
     fun `a throwing DAO does not propagate out of record`() {
         val throwingDao = mockk<CallEventDao>()
         coEvery { throwingDao.insert(any()) } throws RuntimeException("disk full")
-        val (recorder, job, uncaught) = recorderWith(Settings(false, 90, false, false), throwingDao)
+        val (recorder, job, uncaught) = recorderWith(Settings(false, 90, false, false, false), throwingDao)
 
         // record() must not throw, and the launched coroutine must not fail either. The scope's
         // CoroutineExceptionHandler captures anything that escapes record()'s internal
@@ -153,9 +176,10 @@ class RoomCallEventRecorderTest {
     private fun event(
         numberOrHash: String,
         regionCode: String = "AT",
-        matchedRuleId: String = "rule-1",
+        matchedRuleId: String? = "rule-1",
         action: RuleAction = RuleAction.BLOCK,
-    ): CallEvent = CallEvent("event-1", Instant.EPOCH, numberOrHash, regionCode, matchedRuleId, action)
+        reason: DecisionReason = DecisionReason.RULE_MATCH,
+    ): CallEvent = CallEvent("event-1", Instant.EPOCH, numberOrHash, regionCode, matchedRuleId, action, reason)
 
     private fun newTempFile(prefix: String): File {
         val file = File.createTempFile("$prefix-recorder-test", ".preferences_pb")

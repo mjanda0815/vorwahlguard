@@ -2,6 +2,7 @@ package io.janda.vorwahlguard.data.events
 
 import androidx.room.Room
 import io.janda.vorwahlguard.data.db.VorwahlGuardDatabase
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.RuleAction
 import java.time.Instant
 import kotlinx.coroutines.flow.first
@@ -50,9 +51,11 @@ class CallEventDaoAggregatesTest {
         numberOrHash: String = "+4915112345678",
         isHashed: Boolean = false,
         regionCode: String = "AT",
-        matchedRuleId: String = "rule-1",
+        matchedRuleId: String? = "rule-1",
         action: String = RuleAction.BLOCK.name,
-    ): CallEventEntity = CallEventEntity(id, occurredAt, numberOrHash, isHashed, regionCode, matchedRuleId, action)
+        reason: String = DecisionReason.RULE_MATCH.name,
+    ): CallEventEntity =
+        CallEventEntity(id, occurredAt, numberOrHash, isHashed, regionCode, matchedRuleId, action, reason)
 
     @Test
     fun `observeTotalCount reflects the current row count`() = runBlocking {
@@ -199,5 +202,55 @@ class CallEventDaoAggregatesTest {
 
         assertEquals(3, result.size)
         assertEquals(RuleIdCount("rule-a", 2), result.first())
+    }
+
+    @Test
+    fun `a reason-only row is counted in observeTotalCount and observeNewestFirst but excluded from observeTopRules`() = runBlocking {
+        dao.insert(
+            entity(
+                "reason-only",
+                matchedRuleId = null,
+                action = RuleAction.ALLOW.name,
+                reason = DecisionReason.NO_MATCH.name,
+            ),
+        )
+        dao.insert(entity("rule-matched", matchedRuleId = "rule-a"))
+
+        assertEquals(2, dao.observeTotalCount().first())
+        assertEquals(setOf("reason-only", "rule-matched"), dao.observeNewestFirst().first().map { it.id }.toSet())
+        assertEquals(listOf(RuleIdCount("rule-a", 1)), dao.observeTopRules().first())
+    }
+
+    @Test
+    fun `observeActionBreakdown groups by action and reason`() = runBlocking {
+        dao.insert(entity("block-1", action = RuleAction.BLOCK.name, matchedRuleId = "rule-a"))
+        dao.insert(entity("block-2", action = RuleAction.BLOCK.name, matchedRuleId = "rule-a"))
+        dao.insert(
+            entity(
+                "contact-1",
+                matchedRuleId = null,
+                action = RuleAction.ALLOW.name,
+                reason = DecisionReason.CONTACT_BYPASS.name,
+            ),
+        )
+        dao.insert(
+            entity(
+                "no-match-1",
+                matchedRuleId = null,
+                action = RuleAction.ALLOW.name,
+                reason = DecisionReason.NO_MATCH.name,
+            ),
+        )
+
+        val result = dao.observeActionBreakdown().first().toSet()
+
+        assertEquals(
+            setOf(
+                ActionReasonCount(RuleAction.BLOCK.name, DecisionReason.RULE_MATCH.name, 2),
+                ActionReasonCount(RuleAction.ALLOW.name, DecisionReason.CONTACT_BYPASS.name, 1),
+                ActionReasonCount(RuleAction.ALLOW.name, DecisionReason.NO_MATCH.name, 1),
+            ),
+            result,
+        )
     }
 }

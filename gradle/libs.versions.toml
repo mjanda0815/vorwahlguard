@@ -33,6 +33,12 @@ hiltNavigationCompose = "1.4.0"
 hilt = "2.59.2"
 room = "2.8.4"
 datastore = "1.2.1"
+# room-migration 2.8.4 (pulled by room-testing's MigrationTestHelper) is compiled against
+# kotlinx-serialization 1.8.1, but navigation-compose resolves 1.7.3 on the app runtime
+# classpath — and AGP's consistent resolution forces androidTest to the app's (lower) version,
+# which crashes schema parsing at test runtime (AbstractMethodError in FieldBundle$$serializer).
+# Pinning the BOM raises the whole graph to 1.8.1; minor version, backward compatible.
+kotlinxSerialization = "1.8.1"
 
 # --- Domain ---
 libphonenumber = "9.0.34"   # core artifact only — no geocoder/carrier (CLAUDE.md §2)
@@ -106,6 +112,7 @@ androidx-test-runner = { group = "androidx.test", name = "runner", version.ref =
 androidx-test-rules = { group = "androidx.test", name = "rules", version.ref = "androidxTestRules" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+kotlinx-serialization-bom = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-bom", version.ref = "kotlinxSerialization" }
 
 [bundles]
 compose = ["compose-ui", "compose-ui-graphics", "compose-ui-tooling-preview", "compose-material3", "compose-material-icons-core"]

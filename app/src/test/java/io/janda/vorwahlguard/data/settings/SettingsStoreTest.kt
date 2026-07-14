@@ -45,7 +45,7 @@ class SettingsStoreTest {
 
     @Test
     fun `update round trips every field away from its default`() = runBlocking {
-        val nonDefault = Settings(true, 30, true, true)
+        val nonDefault = Settings(true, 30, true, true, true)
 
         store.update { nonDefault }
 
@@ -54,11 +54,15 @@ class SettingsStoreTest {
 
     @Test
     fun `update transforms the previously stored value, not the defaults`() = runBlocking {
-        store.update { current -> Settings(true, current.retentionDays(), current.pseudonymiseNumbers(), current.notifyOnBlock()) }
-        store.update { current -> Settings(current.contactsBypassEnabled(), 7, current.pseudonymiseNumbers(), current.notifyOnBlock()) }
+        store.update { current ->
+            Settings(true, current.retentionDays(), current.pseudonymiseNumbers(), current.notifyOnBlock(), current.logAllowedCalls())
+        }
+        store.update { current ->
+            Settings(current.contactsBypassEnabled(), 7, current.pseudonymiseNumbers(), current.notifyOnBlock(), current.logAllowedCalls())
+        }
 
         val settings = store.settings.first()
 
-        assertEquals(Settings(true, 7, false, false), settings)
+        assertEquals(Settings(true, 7, false, false, false), settings)
     }
 }

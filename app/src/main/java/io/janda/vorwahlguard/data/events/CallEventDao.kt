@@ -36,7 +36,15 @@ interface CallEventDao {
     /** UI-only read (`UebersichtScreen`'s top-rules list) — never called on the `onScreenCall()` hot path. */
     @Query(
         "SELECT matched_rule_id AS ruleId, COUNT(*) AS count FROM call_events " +
+            "WHERE matched_rule_id IS NOT NULL " +
             "GROUP BY matched_rule_id ORDER BY count DESC, matched_rule_id ASC LIMIT 3",
     )
     fun observeTopRules(): Flow<List<RuleIdCount>>
+
+    /**
+     * UI-only read (`UebersichtScreen`'s action breakdown, issue #59) — never called on the
+     * `onScreenCall()` hot path. One row per distinct `(action, reason)` pair actually present.
+     */
+    @Query("SELECT action, reason, COUNT(*) AS count FROM call_events GROUP BY action, reason")
+    fun observeActionBreakdown(): Flow<List<ActionReasonCount>>
 }

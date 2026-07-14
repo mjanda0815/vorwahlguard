@@ -12,6 +12,7 @@ import io.janda.vorwahlguard.data.events.RetentionPurger
 import io.janda.vorwahlguard.data.rules.RuleDao
 import io.janda.vorwahlguard.data.rules.toEntity
 import io.janda.vorwahlguard.data.settings.SettingsStore
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.PatternSyntax
 import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
@@ -127,5 +128,6 @@ class RoomInstrumentedTest {
         regionCode = "AT",
         matchedRuleId = "some-rule",
         action = RuleAction.BLOCK.name,
+        reason = DecisionReason.RULE_MATCH.name,
     )
 }

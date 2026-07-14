@@ -48,6 +48,7 @@ class RoomCallEventRecorder @Inject constructor(
                         regionCode = event.regionCode(),
                         matchedRuleId = event.matchedRuleId(),
                         action = event.action().name,
+                        reason = event.reason().name,
                     ),
                 )
             }

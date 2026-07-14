@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.janda.vorwahlguard.data.db.MIGRATION_1_2
 import io.janda.vorwahlguard.data.db.VorwahlGuardDatabase
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.rules.RuleDao
@@ -25,6 +26,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): VorwahlGuardDatabase =
         Room.databaseBuilder(context, VorwahlGuardDatabase::class.java, "vorwahlguard.db")
+            .addMigrations(MIGRATION_1_2)
             .build()
 
     @Provides
