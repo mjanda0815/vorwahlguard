@@ -16,11 +16,17 @@ import io.janda.vorwahlguard.R
  * "Vorwahl eingeben" tab body: the free-text pattern field with live validation and a
  * "Nummer testen" field that reports what the in-progress rule (or an existing rule) would do
  * with the typed number. Stateless — every keystroke is reported up to `AddRuleViewModel`.
+ *
+ * [patternMissingWildcard] flags a syntactically valid but permanently dead pattern — a bare
+ * calling code with no trailing `*` (e.g. `+43` instead of `+43*`) parses as an exact match on a
+ * number that can never occur. Shown the same way as [duplicate]: the field turns to the error
+ * style, but saving is still allowed (the pattern is legal grammar; this is a nudge, not a block).
  */
 @Composable
 fun PrefixInputContent(
     patternText: String,
     patternValid: Boolean,
+    patternMissingWildcard: Boolean,
     duplicate: Boolean,
     testInput: String,
     testOutcome: TestOutcome?,
@@ -34,11 +40,13 @@ fun PrefixInputContent(
             value = patternText,
             onValueChange = onPatternTextChange,
             label = { Text(stringResource(R.string.add_rule_pattern_label)) },
-            isError = showInvalid || duplicate,
+            isError = showInvalid || duplicate || patternMissingWildcard,
             supportingText = {
                 when {
                     showInvalid -> Text(stringResource(R.string.add_rule_pattern_invalid))
                     duplicate -> Text(stringResource(R.string.add_rule_pattern_duplicate))
+                    patternMissingWildcard ->
+                        Text(stringResource(R.string.add_rule_pattern_missing_wildcard, patternText))
                 }
             },
             singleLine = true,

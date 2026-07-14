@@ -116,6 +116,7 @@ fun AddRuleSheet(
                     PrefixInputContent(
                         patternText = uiState.patternText,
                         patternValid = uiState.patternValid,
+                        patternMissingWildcard = uiState.patternMissingWildcard,
                         duplicate = uiState.duplicate,
                         testInput = uiState.testInput,
                         testOutcome = uiState.testOutcome,

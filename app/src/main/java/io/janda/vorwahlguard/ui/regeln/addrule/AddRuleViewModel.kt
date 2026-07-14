@@ -133,6 +133,7 @@ class AddRuleViewModel @Inject constructor(
                     collateral = collateral,
                     patternText = patternText,
                     patternValid = patternValid,
+                    patternMissingWildcard = false,
                     recommendedAction = recommended,
                     selectedAction = if (manualActionOverride) state.selectedAction else recommended,
                 )
@@ -142,11 +143,14 @@ class AddRuleViewModel @Inject constructor(
 
     fun onPatternTextChanged(text: String) {
         val valid = PatternSyntax.isValid(text)
-        val recommended = if (valid) recommendedActionFor(PatternSyntax.parse(text)) else RuleAction.BLOCK
+        val parsed = if (valid) PatternSyntax.parse(text) else null
+        val recommended = if (parsed != null) recommendedActionFor(parsed) else RuleAction.BLOCK
+        val missingWildcard = parsed != null && isBareCallingCodeWithoutWildcard(parsed)
         _uiState.update { state ->
             state.copy(
                 patternText = text,
                 patternValid = valid,
+                patternMissingWildcard = missingWildcard,
                 selectedCountry = null,
                 collateral = null,
                 recommendedAction = recommended,
@@ -210,6 +214,21 @@ class AddRuleViewModel @Inject constructor(
 
     private fun isBareCountryPrefix(pattern: Pattern): Boolean {
         if (pattern.kind() != PatternKind.PREFIX) {
+            return false
+        }
+        val callingCode = pattern.digits()?.toIntOrNull() ?: return false
+        return knownCallingCodes.contains(callingCode)
+    }
+
+    /**
+     * A free-text pattern with no trailing `*` parses as [PatternKind.EXACT] — a real, complete
+     * phone number, matched literally. If its digits are exactly a known calling code (e.g. the
+     * user typed `+43` instead of `+43*`), it can never match any real incoming call: no genuine
+     * E.164 number is just a bare calling code with nothing after it. This is almost always a
+     * missing `*`, not a deliberate rule — see [AddRuleUiState.patternMissingWildcard].
+     */
+    private fun isBareCallingCodeWithoutWildcard(pattern: Pattern): Boolean {
+        if (pattern.kind() != PatternKind.EXACT) {
             return false
         }
         val callingCode = pattern.digits()?.toIntOrNull() ?: return false

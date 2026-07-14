@@ -22,6 +22,7 @@
     <string name="add_rule_pattern_label">Muster</string>
     <string name="add_rule_pattern_invalid">Gib ein gültiges Muster ein, z. B. +43663* oder +436631234567</string>
     <string name="add_rule_pattern_duplicate">Für dieses Muster gibt es bereits eine Regel</string>
+    <string name="add_rule_pattern_missing_wildcard">Meintest du „%1$s*"? Ohne das * trifft diese Regel nur auf die exakte Nummer %1$s, die es nicht gibt — sie würde nie greifen.</string>
     <string name="add_rule_resulting_pattern">Regel: %1$s</string>
     <string name="add_rule_collateral_single">Diese Regel gilt auch für %1$s.</string>
     <plurals name="add_rule_collateral_more">

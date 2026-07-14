@@ -176,6 +176,49 @@ class AddRuleViewModelTest {
     }
 
     @Test
+    fun `a bare known calling code with no wildcard is flagged as missing the wildcard`() = runTest(dispatcher) {
+        viewModel.onPatternTextChanged("+43")
+
+        val state = viewModel.uiState.value
+        assertTrue("+43 is syntactically valid (EXACT)", state.patternValid)
+        assertTrue(state.patternMissingWildcard)
+    }
+
+    @Test
+    fun `a bare calling code prefix with the wildcard is not flagged as missing it`() = runTest(dispatcher) {
+        viewModel.onPatternTextChanged("+43*")
+
+        assertFalse(viewModel.uiState.value.patternMissingWildcard)
+    }
+
+    @Test
+    fun `a deeper prefix is not flagged as a missing wildcard`() = runTest(dispatcher) {
+        viewModel.onPatternTextChanged("+43663*")
+
+        assertFalse(viewModel.uiState.value.patternMissingWildcard)
+    }
+
+    @Test
+    fun `a real exact number is not flagged as a missing wildcard`() = runTest(dispatcher) {
+        viewModel.onPatternTextChanged("+436631234567")
+
+        assertFalse(viewModel.uiState.value.patternMissingWildcard)
+    }
+
+    @Test
+    fun `selecting a country never flags the missing-wildcard warning`() = runTest(dispatcher) {
+        // If the free-text tab had already flagged the warning, selectCountry must clear it —
+        // the country picker always appends the wildcard itself.
+        viewModel.onPatternTextChanged("+43")
+        assertTrue(viewModel.uiState.value.patternMissingWildcard)
+
+        val at = viewModel.uiState.value.countries.first { it.iso2 == "AT" }
+        viewModel.selectCountry(at)
+
+        assertFalse(viewModel.uiState.value.patternMissingWildcard)
+    }
+
+    @Test
     fun `an invalid pattern text defaults the recommendation to block`() = runTest(dispatcher) {
         viewModel.onPatternTextChanged("not-a-pattern")
 
