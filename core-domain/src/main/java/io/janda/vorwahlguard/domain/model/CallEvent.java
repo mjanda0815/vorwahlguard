@@ -1,18 +1,89 @@
 package io.janda.vorwahlguard.domain.model;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * The shape of one recorded screening result (PROJECT.md §4). Plain data — no behaviour.
  * {@code numberOrHash} is either the E.164 number or {@code sha256(number + local salt)},
  * depending on {@link Settings#pseudonymiseNumbers()}; that choice is made by the {@code :app}
  * adapter, not here (CLAUDE.md §12).
+ *
+ * <p>Plain class, not a {@code record} — see {@link Settings}'s class doc for why.
  */
-public record CallEvent(
-        String id,
-        Instant occurredAt,
-        String numberOrHash,
-        String regionCode,
-        String matchedRuleId,
-        RuleAction action) {
+public final class CallEvent {
+
+    private final String id;
+    private final Instant occurredAt;
+    private final String numberOrHash;
+    private final String regionCode;
+    private final String matchedRuleId;
+    private final RuleAction action;
+
+    public CallEvent(
+            String id,
+            Instant occurredAt,
+            String numberOrHash,
+            String regionCode,
+            String matchedRuleId,
+            RuleAction action) {
+        this.id = id;
+        this.occurredAt = occurredAt;
+        this.numberOrHash = numberOrHash;
+        this.regionCode = regionCode;
+        this.matchedRuleId = matchedRuleId;
+        this.action = action;
+    }
+
+    public String id() {
+        return id;
+    }
+
+    public Instant occurredAt() {
+        return occurredAt;
+    }
+
+    public String numberOrHash() {
+        return numberOrHash;
+    }
+
+    public String regionCode() {
+        return regionCode;
+    }
+
+    public String matchedRuleId() {
+        return matchedRuleId;
+    }
+
+    public RuleAction action() {
+        return action;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof CallEvent other)) return false;
+        return Objects.equals(id, other.id)
+                && Objects.equals(occurredAt, other.occurredAt)
+                && Objects.equals(numberOrHash, other.numberOrHash)
+                && Objects.equals(regionCode, other.regionCode)
+                && Objects.equals(matchedRuleId, other.matchedRuleId)
+                && action == other.action;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, occurredAt, numberOrHash, regionCode, matchedRuleId, action);
+    }
+
+    @Override
+    public String toString() {
+        return "CallEvent[id=" + id
+                + ", occurredAt=" + occurredAt
+                + ", numberOrHash=" + numberOrHash
+                + ", regionCode=" + regionCode
+                + ", matchedRuleId=" + matchedRuleId
+                + ", action=" + action
+                + "]";
+    }
 }
