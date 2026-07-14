@@ -1,0 +1,21 @@
+# Dependabot: CVE alerts + update PRs for the two ecosystems this repo actually has.
+# Chosen over an NVD-API-key/OWASP-Dependency-Check setup: the GitHub Advisory Database
+# matches real Maven coordinates (far fewer false positives than NVD CPE matching for
+# Gradle projects), needs no key, and its PRs run through the existing CI gate.
+# The one genuinely exposed dependency here is libphonenumber — it parses
+# attacker-controlled caller-ID strings on the screening hot path.
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Git Flow (CLAUDE.md §8): all PRs target develop, never main.
+    target-branch: "develop"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
