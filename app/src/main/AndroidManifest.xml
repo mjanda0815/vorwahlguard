@@ -12,6 +12,12 @@
   is not a network permission and leaves the invariant above unchanged — it powers the on-device
   contacts-bypass rule (CachedContactsLookup): looked-up numbers never leave the device and are
   never logged.
+
+  allowBackup is "false" on purpose: Android's Auto Backup transport needs no INTERNET permission
+  in the app itself, so it is not covered by the CI check above, but it would still copy
+  vorwahlguard.db (raw E.164 numbers whenever pseudonymisation is off, which is the default) and
+  the settings DataStore (the pseudonymisation salt) to the user's Google Drive. That breaks the
+  "phone numbers never leave the device" promise just as surely as a network permission would.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
@@ -19,7 +25,7 @@
 
     <application
         android:name=".VorwahlGuardApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
