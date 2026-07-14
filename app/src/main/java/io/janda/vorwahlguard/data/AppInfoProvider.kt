@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.janda.vorwahlguard.R
 import java.time.Instant
 import java.time.Year
 import java.time.ZoneId
@@ -31,15 +32,20 @@ class AppInfoProvider @Inject constructor(
      * unconditionally: added in API 28, one below this app's `minSdk` 29) and
      * [PackageInfo.lastUpdateTime], the closest thing `PackageManager` exposes for free to a true
      * build timestamp without adding `BuildConfig` generation and baking a compile-time value into
-     * it (which would bust Gradle's build cache on every single build). Formatted with the
-     * device's current locale, not hardcoded to German.
+     * it (which would bust Gradle's build cache on every single build). Both the date and the
+     * template come from the device locale (`settings_about_build_line`), not hardcoded here.
      */
     fun displayVersion(): String {
         val info = packageInfo()
         val date = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
             .withLocale(context.resources.configuration.locales.get(0))
             .format(Instant.ofEpochMilli(info.lastUpdateTime).atZone(ZoneId.systemDefault()))
-        return "${info.versionName ?: ""} (Build ${info.longVersionCode}) · $date"
+        return context.getString(
+            R.string.settings_about_build_line,
+            info.versionName ?: "",
+            info.longVersionCode,
+            date,
+        )
     }
 
     /** Current year for the About section's "© <year> Martin Janda" copyright line. */

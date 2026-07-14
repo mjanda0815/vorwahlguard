@@ -106,6 +106,8 @@
     <string name="settings_log_allowed_body">Also record calls that were allowed — because the caller is a contact or no rule matched — in the log. Off by default.</string>
     <string name="settings_about_section_title">About</string>
     <string name="settings_about_version">Version %1$s</string>
+    <!-- versionName, build number, locale-formatted date — assembled by AppInfoProvider. -->
+    <string name="settings_about_build_line">%1$s (Build %2$d) · %3$s</string>
     <string name="settings_about_license">License: MIT</string>
     <string name="settings_about_repo">Source code</string>
     <string name="settings_about_repo_url" translatable="false">https://github.com/mjanda0815/vorwahlguard</string>

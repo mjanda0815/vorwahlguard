@@ -104,6 +104,8 @@
     <string name="settings_log_allowed_body">Auch Anrufe protokollieren, die zugelassen wurden – weil die Nummer in den Kontakten steht oder keine Regel passte. Standardmäßig aus.</string>
     <string name="settings_about_section_title">Über die App</string>
     <string name="settings_about_version">Version %1$s</string>
+    <!-- versionName, Build-Nummer, lokal formatiertes Datum — von AppInfoProvider zusammengesetzt. -->
+    <string name="settings_about_build_line">%1$s (Build %2$d) · %3$s</string>
     <string name="settings_about_license">Lizenz: MIT</string>
     <string name="settings_about_repo">Quellcode</string>
     <string name="settings_about_copyright">© %1$d Martin Janda</string>

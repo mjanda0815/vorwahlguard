@@ -5,6 +5,7 @@ import android.telecom.CallScreeningService
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import io.janda.vorwahlguard.data.contacts.CachedContactsLookup
+import io.janda.vorwahlguard.data.events.PRIVATE_NUMBER_PLACEHOLDER
 import io.janda.vorwahlguard.data.events.RetentionPurger
 import io.janda.vorwahlguard.data.events.UNKNOWN_REGION_CODE
 import io.janda.vorwahlguard.data.rules.CachedRuleRepository
@@ -207,6 +208,5 @@ class VorwahlGuardScreeningService : CallScreeningService() {
     private companion object {
         const val TAG = "VorwahlGuardScreening"
         const val WARM_TIMEOUT_MS = 1_000L
-        const val PRIVATE_NUMBER_PLACEHOLDER = "PRIVATE"
     }
 }

@@ -10,12 +10,10 @@ import io.janda.vorwahlguard.data.events.RoomCallEventRecorder
 import io.janda.vorwahlguard.data.rules.CachedRuleRepository
 import io.janda.vorwahlguard.data.rules.RoomRuleSnapshotSource
 import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
-import io.janda.vorwahlguard.data.settings.CachedSettingsRepository
 import io.janda.vorwahlguard.domain.port.out.CallEventRecorder
 import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.ContactsLookup
 import io.janda.vorwahlguard.domain.port.out.RuleRepository
-import io.janda.vorwahlguard.domain.port.out.SettingsRepository
 import javax.inject.Singleton
 
 /**
@@ -40,9 +38,8 @@ abstract class AdapterModule {
     @Singleton
     abstract fun bindContactsLookup(impl: CachedContactsLookup): ContactsLookup
 
-    @Binds
-    @Singleton
-    abstract fun bindSettingsRepository(impl: CachedSettingsRepository): SettingsRepository
+    // No settings binding: CachedSettingsRepository is injected as the concrete type — the domain
+    // has no settings port for it to implement (see that class's KDoc).
 
     @Binds
     @Singleton
