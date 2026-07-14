@@ -86,7 +86,8 @@ class EinstellungenViewModelTest {
         every { roleProvider.createRoleRequestIntent() } returns null
 
         appInfoProvider = mockk()
-        every { appInfoProvider.versionName() } returns "1.2.3"
+        every { appInfoProvider.displayVersion() } returns "1.2.3"
+        every { appInfoProvider.copyrightYear() } returns 2026
     }
 
     private fun createViewModel(): EinstellungenViewModel = EinstellungenViewModel(
@@ -116,10 +117,11 @@ class EinstellungenViewModelTest {
     }
 
     @Test
-    fun `appVersion is set from AppInfoProvider at construction`() = runTest(dispatcher) {
+    fun `appVersion and copyrightYear are set from AppInfoProvider at construction`() = runTest(dispatcher) {
         val state = createViewModel().uiState.value
 
         assertEquals("1.2.3", state.appVersion)
+        assertEquals(2026, state.copyrightYear)
     }
 
     @Test

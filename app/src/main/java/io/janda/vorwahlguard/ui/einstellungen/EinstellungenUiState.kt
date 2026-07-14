@@ -5,10 +5,10 @@ package io.janda.vorwahlguard.ui.einstellungen
  * "loaded with defaults" the same way [io.janda.vorwahlguard.ui.protokoll.ProtokollUiState] and
  * [io.janda.vorwahlguard.ui.regeln.RegelnUiState] do: it flips once the first
  * [io.janda.vorwahlguard.data.settings.SettingsStore.settings] emission has been applied.
- * [roleAvailable]/[roleHeld] and [appVersion] are independent of [loaded] — they are read
- * eagerly at construction (and [roleAvailable]/[roleHeld] again on `ON_RESUME`), not derived from
- * the settings Flow. [contactsPermissionDenied] is UI-only transient state: it is set when the
- * user declines the `READ_CONTACTS` system prompt and is never persisted.
+ * [roleAvailable]/[roleHeld], [appVersion] and [copyrightYear] are independent of [loaded] — they
+ * are read eagerly at construction (and [roleAvailable]/[roleHeld] again on `ON_RESUME`), not
+ * derived from the settings Flow. [contactsPermissionDenied] is UI-only transient state: it is set
+ * when the user declines the `READ_CONTACTS` system prompt and is never persisted.
  */
 data class EinstellungenUiState(
     val loaded: Boolean = false,
@@ -20,6 +20,7 @@ data class EinstellungenUiState(
     val retentionDays: Int = 90,
     val contactsPermissionDenied: Boolean = false,
     val appVersion: String = "",
+    val copyrightYear: Int = 0,
 )
 
 /** One-shot side effects [EinstellungenScreen] must act on outside of recomposition. */
