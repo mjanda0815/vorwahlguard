@@ -56,7 +56,7 @@ kotlinxCoroutinesTest = "1.9.0"
 # --- app/src/androidTest (real-device instrumented tests, issue #29 store-readiness review) ---
 androidxTestCore = "1.6.1"
 androidxTestRunner = "1.6.2"
-androidxTestRules = "1.6.1"
+androidxTestRules = "1.7.0"
 androidxTestJunit = "1.3.0"
 
 [libraries]
