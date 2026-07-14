@@ -55,10 +55,12 @@
     <!-- Protokoll (Issue #25) -->
     <string name="log_filter_all">Alle</string>
     <string name="log_empty_title">Noch keine erfassten Anrufe</string>
-    <string name="log_empty_body">Gesperrte und stummgeschaltete Anrufe erscheinen hier.</string>
+    <string name="log_empty_body">Geprüfte Anrufe erscheinen hier.</string>
     <string name="log_empty_filtered_title">Keine Anrufe für diesen Filter</string>
     <string name="log_empty_filtered_body">Kein erfasster Anruf entspricht der gewählten Aktion.</string>
     <string name="log_region_unknown">Unbekanntes Gebiet</string>
+    <string name="log_reason_contact">Kontakt</string>
+    <string name="log_reason_no_rule">Keine passende Regel</string>
 
     <!-- Übersicht (Issue #27) -->
     <string name="overview_hero_label">Geprüfte Anrufe</string>
@@ -72,6 +74,7 @@
     <string name="overview_role_warning_title">Anrufschutz ist nicht aktiv</string>
     <string name="overview_role_warning_body">VorwahlGuard muss als Anrufschutz-App festgelegt sein, um Anrufe zu sperren oder stummzuschalten.</string>
     <string name="overview_role_warning_button">Anrufschutz aktivieren</string>
+    <string name="overview_breakdown_title">Verteilung nach Aktion</string>
 
     <!-- Einstellungen (Issue #29) -->
     <string name="settings_role_section_title">Anrufschutz</string>
@@ -90,6 +93,8 @@
     <string name="settings_pseudonymise_body">Speichert einen gesalzenen Hash statt der Nummer im Anrufprotokoll. Statistiken funktionieren weiterhin; die Nummer kann nicht mehr angezeigt werden.</string>
     <string name="settings_notify_title">Bei Sperrung benachrichtigen</string>
     <string name="settings_notify_body">Zeigt eine Systembenachrichtigung, wenn ein Anruf gesperrt wird.</string>
+    <string name="settings_log_allowed_title">Zugelassene Anrufe protokollieren</string>
+    <string name="settings_log_allowed_body">Auch Anrufe protokollieren, die zugelassen wurden – weil die Nummer in den Kontakten steht oder keine Regel passte. Standardmäßig aus.</string>
     <string name="settings_about_section_title">Über die App</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="settings_about_license">Lizenz: MIT</string>

@@ -1,9 +1,11 @@
 package io.janda.vorwahlguard.ui.uebersicht
 
 import android.content.Intent
+import io.janda.vorwahlguard.data.events.ActionReasonCount
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.events.RegionCount
 import io.janda.vorwahlguard.data.events.RuleIdCount
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
 import io.janda.vorwahlguard.domain.model.Country
 import io.janda.vorwahlguard.domain.model.PatternSyntax
@@ -29,9 +31,9 @@ import org.junit.Rule as JUnitRule
 import org.junit.Test
 
 /**
- * Covers [UebersichtViewModel]: the 5-way [kotlinx.coroutines.flow.combine] of
- * [CallEventDao]'s four aggregate Flows plus [RuleSnapshotSource.observe] producing a fully
- * populated, `loaded=true` [UebersichtUiState]; [UebersichtUiState.hasAnyEvents] tracking
+ * Covers [UebersichtViewModel]: the combined [CallEventDao] aggregate Flows (including
+ * [CallEventDao.observeActionBreakdown], issue #59) plus [RuleSnapshotSource.observe] producing a
+ * fully populated, `loaded=true` [UebersichtUiState]; [UebersichtUiState.hasAnyEvents] tracking
  * `totalScreened > 0`; role status being read once at construction (before any
  * [UebersichtViewModel.refreshRoleStatus] call) and re-read live on each subsequent call — proving
  * it is not cached — via [CallScreeningRoleProvider]; and
@@ -53,6 +55,7 @@ class UebersichtViewModelTest {
     private lateinit var occurredAtSinceFlow: MutableStateFlow<List<Long>>
     private lateinit var topRegionsFlow: MutableStateFlow<List<RegionCount>>
     private lateinit var topRulesFlow: MutableStateFlow<List<RuleIdCount>>
+    private lateinit var actionBreakdownFlow: MutableStateFlow<List<ActionReasonCount>>
     private lateinit var rulesFlow: MutableStateFlow<List<Rule>>
 
     private lateinit var dao: CallEventDao
@@ -75,6 +78,7 @@ class UebersichtViewModelTest {
         occurredAtSinceFlow = MutableStateFlow(emptyList())
         topRegionsFlow = MutableStateFlow(emptyList())
         topRulesFlow = MutableStateFlow(emptyList())
+        actionBreakdownFlow = MutableStateFlow(emptyList())
         rulesFlow = MutableStateFlow(emptyList())
 
         dao = mockk()
@@ -82,6 +86,7 @@ class UebersichtViewModelTest {
         every { dao.observeOccurredAtSince(any()) } returns occurredAtSinceFlow
         every { dao.observeTopRegions() } returns topRegionsFlow
         every { dao.observeTopRules() } returns topRulesFlow
+        every { dao.observeActionBreakdown() } returns actionBreakdownFlow
 
         ruleSnapshotSource = mockk()
         every { ruleSnapshotSource.observe() } returns rulesFlow
@@ -208,6 +213,17 @@ class UebersichtViewModelTest {
         viewModel.refreshRoleStatus()
 
         assertTrue(viewModel.uiState.value.roleAvailable)
+    }
+
+    @Test
+    fun `a combined emission maps observeActionBreakdown through to actionBreakdown`() = runTest(dispatcher) {
+        totalCountFlow.value = 3
+        actionBreakdownFlow.value = listOf(ActionReasonCount(RuleAction.BLOCK.name, DecisionReason.RULE_MATCH.name, 3))
+        rulesFlow.value = listOf(liveRule)
+
+        val state = createViewModel().uiState.value
+
+        assertEquals(3, state.actionBreakdown.single { it.category == BreakdownCategory.BLOCK }.count)
     }
 
     @Test

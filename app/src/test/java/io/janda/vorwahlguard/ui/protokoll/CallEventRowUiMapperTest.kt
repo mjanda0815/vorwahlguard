@@ -2,6 +2,7 @@ package io.janda.vorwahlguard.ui.protokoll
 
 import io.janda.vorwahlguard.data.events.CallEventEntity
 import io.janda.vorwahlguard.domain.model.Country
+import io.janda.vorwahlguard.domain.model.DecisionReason
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.mockk.every
@@ -47,10 +48,11 @@ class CallEventRowUiMapperTest {
         numberOrHash: String = "+4915112345678",
         isHashed: Boolean = false,
         regionCode: String = "AT",
-        matchedRuleId: String = "rule-1",
+        matchedRuleId: String? = "rule-1",
         action: String = RuleAction.BLOCK.name,
+        reason: String = DecisionReason.RULE_MATCH.name,
     ): CallEventEntity {
-        return CallEventEntity(id, occurredAt, numberOrHash, isHashed, regionCode, matchedRuleId, action)
+        return CallEventEntity(id, occurredAt, numberOrHash, isHashed, regionCode, matchedRuleId, action, reason)
     }
 
     @Test
@@ -174,5 +176,44 @@ class CallEventRowUiMapperTest {
         val row = mapper.toRow(entity(action = RuleAction.ALLOW.name), locale, zone)
 
         assertEquals(RuleAction.ALLOW, row?.action)
+    }
+
+    @Test
+    fun `a RULE_MATCH reason produces a null allowReason`() {
+        val row = mapper.toRow(entity(reason = DecisionReason.RULE_MATCH.name), locale, zone)
+
+        assertNull(row?.allowReason)
+    }
+
+    @Test
+    fun `a CONTACT_BYPASS reason maps to AllowReasonUi CONTACT_BYPASS`() {
+        val row = mapper.toRow(
+            entity(matchedRuleId = null, action = RuleAction.ALLOW.name, reason = DecisionReason.CONTACT_BYPASS.name),
+            locale,
+            zone,
+        )
+
+        assertEquals(AllowReasonUi.CONTACT_BYPASS, row?.allowReason)
+    }
+
+    @Test
+    fun `a NO_MATCH reason maps to AllowReasonUi NO_MATCH`() {
+        val row = mapper.toRow(
+            entity(matchedRuleId = null, action = RuleAction.ALLOW.name, reason = DecisionReason.NO_MATCH.name),
+            locale,
+            zone,
+        )
+
+        assertEquals(AllowReasonUi.NO_MATCH, row?.allowReason)
+    }
+
+    @Test
+    fun `an unparseable reason leniently maps to a null allowReason instead of dropping the row`() {
+        val row = mapper.toRow(entity(reason = "GARBAGE"), locale, zone)
+
+        assertNull(row?.allowReason)
+        // The row itself must still be produced — only the action needs to parse (CLAUDE.md
+        // §12 statistics survive unrelated schema drift on a best-effort field).
+        assertEquals(RuleAction.BLOCK, row?.action)
     }
 }

@@ -42,6 +42,8 @@ class ProtokollListContentTest {
     private lateinit var regionUnknown: String
     private lateinit var privateLabel: String
     private lateinit var filterAll: String
+    private lateinit var logReasonContact: String
+    private lateinit var logReasonNoRule: String
 
     @Before
     fun setUp() {
@@ -53,6 +55,8 @@ class ProtokollListContentTest {
         regionUnknown = context.getString(R.string.log_region_unknown)
         privateLabel = context.getString(R.string.rules_private_label)
         filterAll = context.getString(R.string.log_filter_all)
+        logReasonContact = context.getString(R.string.log_reason_contact)
+        logReasonNoRule = context.getString(R.string.log_reason_no_rule)
     }
 
     private fun setContent(state: ProtokollUiState, onFilterSelect: (RuleAction?) -> Unit = {}) {
@@ -68,7 +72,8 @@ class ProtokollListContentTest {
         timestampText: String = "13.07.26, 10:00",
         action: RuleAction = RuleAction.BLOCK,
         display: CallEventDisplay,
-    ): CallEventRowUi = CallEventRowUi(id, timestampText, action, display)
+        allowReason: AllowReasonUi? = null,
+    ): CallEventRowUi = CallEventRowUi(id, timestampText, action, display, allowReason)
 
     @Test
     fun numberRowShowsTheE164TextAndTheActionLabel() {
@@ -115,6 +120,39 @@ class ProtokollListContentTest {
         setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
 
         composeTestRule.onNodeWithText(privateLabel).assertExists()
+    }
+
+    @Test
+    fun aRowWithNoAllowReasonDoesNotShowAReasonCaption() {
+        val displayRow = row(action = RuleAction.BLOCK, display = CallEventDisplay.Number("+4915112345678"))
+        setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
+
+        composeTestRule.onNodeWithText(logReasonContact).assertDoesNotExist()
+        composeTestRule.onNodeWithText(logReasonNoRule).assertDoesNotExist()
+    }
+
+    @Test
+    fun aContactBypassRowShowsTheContactReasonCaption() {
+        val displayRow = row(
+            action = RuleAction.ALLOW,
+            display = CallEventDisplay.Number("+4915112345678"),
+            allowReason = AllowReasonUi.CONTACT_BYPASS,
+        )
+        setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
+
+        composeTestRule.onNodeWithText(logReasonContact).assertExists()
+    }
+
+    @Test
+    fun aNoMatchRowShowsTheNoMatchingRuleReasonCaption() {
+        val displayRow = row(
+            action = RuleAction.ALLOW,
+            display = CallEventDisplay.Number("+4915112345678"),
+            allowReason = AllowReasonUi.NO_MATCH,
+        )
+        setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
+
+        composeTestRule.onNodeWithText(logReasonNoRule).assertExists()
     }
 
     @Test

@@ -1,14 +1,20 @@
 package io.janda.vorwahlguard.ui.uebersicht
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -18,8 +24,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -63,6 +71,7 @@ fun UebersichtContent(
 
         HeroCounter(state.totalScreened, modifier = Modifier.padding(bottom = 16.dp))
         SparklineChart(state.sparkline, modifier = Modifier.padding(bottom = 16.dp))
+        BreakdownSection(state.actionBreakdown, modifier = Modifier.padding(bottom = 16.dp))
         TopCountriesSection(state.topCountries, modifier = Modifier.padding(bottom = 16.dp))
         TopRulesSection(state.topRules)
     }
@@ -143,6 +152,97 @@ private fun SparklineChart(points: List<DaySparkPoint>, modifier: Modifier = Mod
             }
         }
     }
+}
+
+/**
+ * The action/reason breakdown (issue #59): a horizontal segmented bar sized by call count, plus a
+ * legend beneath — mirrors [SparklineChart]'s "title, then a Canvas-adjacent visual" section
+ * style. Hidden entirely when every category is zero (nothing has been screened, or nothing
+ * matches [state.actionBreakdown][UebersichtUiState.actionBreakdown]'s categories yet).
+ */
+@Composable
+private fun BreakdownSection(entries: List<BreakdownEntry>, modifier: Modifier = Modifier) {
+    val nonZero = entries.filter { it.count > 0 }
+    if (nonZero.isEmpty()) {
+        return
+    }
+
+    Column(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.overview_breakdown_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val descriptionParts = nonZero.map { entry ->
+            "${stringResource(entry.category.labelRes())}: ${entry.count}"
+        }
+        val description = descriptionParts.joinToString(", ")
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+                .height(12.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .semantics { contentDescription = description },
+        ) {
+            nonZero.forEach { entry ->
+                Box(
+                    modifier = Modifier
+                        .weight(entry.count.toFloat())
+                        .fillMaxHeight()
+                        .background(colorForCategory(entry.category)),
+                )
+            }
+        }
+        Column(modifier = Modifier.padding(top = 8.dp)) {
+            nonZero.forEach { entry -> BreakdownLegendRow(entry) }
+        }
+    }
+}
+
+@Composable
+private fun BreakdownLegendRow(entry: BreakdownEntry) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(colorForCategory(entry.category)),
+        )
+        Text(
+            text = stringResource(entry.category.labelRes()),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = entry.count.toString(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun colorForCategory(category: BreakdownCategory): Color = when (category) {
+    BreakdownCategory.BLOCK -> MaterialTheme.colorScheme.error
+    BreakdownCategory.SILENCE -> MaterialTheme.colorScheme.tertiary
+    BreakdownCategory.ALLOW_RULE -> MaterialTheme.colorScheme.primary
+    BreakdownCategory.CONTACT -> MaterialTheme.colorScheme.secondary
+    BreakdownCategory.NO_RULE -> MaterialTheme.colorScheme.outline
+}
+
+private fun BreakdownCategory.labelRes(): Int = when (this) {
+    BreakdownCategory.BLOCK -> R.string.action_block
+    BreakdownCategory.SILENCE -> R.string.action_silence
+    BreakdownCategory.ALLOW_RULE -> R.string.action_allow
+    BreakdownCategory.CONTACT -> R.string.log_reason_contact
+    BreakdownCategory.NO_RULE -> R.string.log_reason_no_rule
 }
 
 @Composable

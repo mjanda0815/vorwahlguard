@@ -19,6 +19,7 @@ data class UebersichtUiState(
     val sparkline: List<DaySparkPoint> = emptyList(),
     val topCountries: List<TopCountryUi> = emptyList(),
     val topRules: List<TopRuleUi> = emptyList(),
+    val actionBreakdown: List<BreakdownEntry> = emptyList(),
     val hasAnyEvents: Boolean = false,
     val loaded: Boolean = false,
 )
@@ -42,3 +43,15 @@ sealed interface TopRuleUi {
     data class Known(val row: io.janda.vorwahlguard.ui.regeln.RuleRowUi, val count: Int) : TopRuleUi
     data class Deleted(val count: Int) : TopRuleUi
 }
+
+/**
+ * The five categories the action/reason breakdown (issue #59) is bucketed into, in the fixed
+ * display order [DashboardUiMapper.toBreakdown] always returns them in. `ALLOW_RULE` is an
+ * explicit ALLOW rule match; `CONTACT` and `NO_RULE` only ever appear when
+ * [io.janda.vorwahlguard.domain.model.Settings.logAllowedCalls] was on for at least one recorded
+ * call.
+ */
+enum class BreakdownCategory { BLOCK, SILENCE, ALLOW_RULE, CONTACT, NO_RULE }
+
+/** One category's call count for the Übersicht action breakdown — see [BreakdownCategory]. */
+data class BreakdownEntry(val category: BreakdownCategory, val count: Int)

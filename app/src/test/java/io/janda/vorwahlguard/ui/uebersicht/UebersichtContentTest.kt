@@ -43,6 +43,8 @@ class UebersichtContentTest {
     private lateinit var emptyBody: String
     private lateinit var sparklineDescription: String
     private lateinit var ruleDeleted: String
+    private lateinit var breakdownTitle: String
+    private lateinit var blockLabel: String
 
     @Before
     fun setUp() {
@@ -54,6 +56,8 @@ class UebersichtContentTest {
         emptyBody = context.getString(R.string.overview_empty_body)
         sparklineDescription = context.getString(R.string.overview_sparkline_description)
         ruleDeleted = context.getString(R.string.overview_rule_deleted)
+        breakdownTitle = context.getString(R.string.overview_breakdown_title)
+        blockLabel = context.getString(R.string.action_block)
     }
 
     private fun setContent(state: UebersichtUiState, onRequestRole: () -> Unit = {}) {
@@ -72,6 +76,7 @@ class UebersichtContentTest {
         roleHeld: Boolean = false,
         topCountries: List<TopCountryUi> = emptyList(),
         topRules: List<TopRuleUi> = emptyList(),
+        actionBreakdown: List<BreakdownEntry> = emptyList(),
     ): UebersichtUiState = UebersichtUiState(
         roleAvailable = roleAvailable,
         roleHeld = roleHeld,
@@ -79,6 +84,7 @@ class UebersichtContentTest {
         sparkline = sparkline(5),
         topCountries = topCountries,
         topRules = topRules,
+        actionBreakdown = actionBreakdown,
         hasAnyEvents = true,
         loaded = true,
     )
@@ -202,5 +208,52 @@ class UebersichtContentTest {
         setContent(loadedStateWithEvents())
 
         composeTestRule.onNodeWithContentDescription(sparklineDescription).assertExists()
+    }
+
+    @Test
+    fun breakdownSectionIsHiddenWhenEveryCategoryIsZero() {
+        setContent(
+            loadedStateWithEvents(
+                actionBreakdown = listOf(
+                    BreakdownEntry(BreakdownCategory.BLOCK, 0),
+                    BreakdownEntry(BreakdownCategory.SILENCE, 0),
+                    BreakdownEntry(BreakdownCategory.ALLOW_RULE, 0),
+                    BreakdownEntry(BreakdownCategory.CONTACT, 0),
+                    BreakdownEntry(BreakdownCategory.NO_RULE, 0),
+                ),
+            ),
+        )
+
+        composeTestRule.onNodeWithText(breakdownTitle).assertDoesNotExist()
+    }
+
+    @Test
+    fun breakdownSectionIsShownWhenAtLeastOneCategoryIsNonZero() {
+        setContent(
+            loadedStateWithEvents(
+                actionBreakdown = listOf(BreakdownEntry(BreakdownCategory.BLOCK, 3)),
+            ),
+        )
+
+        composeTestRule.onNodeWithText(breakdownTitle).assertExists()
+    }
+
+    @Test
+    fun breakdownLegendShowsTheCategoryLabelAndCount() {
+        setContent(
+            loadedStateWithEvents(
+                actionBreakdown = listOf(BreakdownEntry(BreakdownCategory.BLOCK, 3)),
+            ),
+        )
+
+        composeTestRule.onNodeWithText(blockLabel, substring = true).assertExists()
+        composeTestRule.onNodeWithText("3").assertExists()
+    }
+
+    @Test
+    fun breakdownSectionIsHiddenWhenTheListIsEmpty() {
+        setContent(loadedStateWithEvents(actionBreakdown = emptyList()))
+
+        composeTestRule.onNodeWithText(breakdownTitle).assertDoesNotExist()
     }
 }
