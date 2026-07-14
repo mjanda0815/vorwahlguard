@@ -116,11 +116,17 @@ class CountryPickerContentTest {
     }
 
     @Test
-    fun resultingPatternIsShownWhenThePrivateRuleIsSelected() {
+    fun privateSelectionShowsTheHumanReadableLabelNotTheRawToken() {
         setContent(privateSelected = true, resultingPattern = "PRIVATE")
 
-        val resultingPatternText = context.getString(R.string.add_rule_resulting_pattern, "PRIVATE")
-        composeTestRule.onNodeWithText(resultingPatternText).assertExists()
+        val readable = context.getString(
+            R.string.add_rule_resulting_pattern,
+            context.getString(R.string.rules_private_label),
+        )
+        composeTestRule.onNodeWithText(readable).assertExists()
+        composeTestRule.onNodeWithText(
+            context.getString(R.string.add_rule_resulting_pattern, "PRIVATE"),
+        ).assertDoesNotExist()
     }
 
     @Test

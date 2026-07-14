@@ -1,5 +1,6 @@
 package io.janda.vorwahlguard.ui.regeln.addrule
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -66,90 +67,91 @@ fun AddRuleSheet(
         sheetState = sheetState,
         modifier = modifier,
     ) {
-        // A single LazyColumn drives every scroll in this sheet, including the country list —
-        // never nest a LazyColumn inside a Modifier.verticalScroll(...) Column, Compose throws
-        // at layout time (only on a real measure pass, so a plain unit test won't catch it; see
-        // AddRuleSheetLayoutTest).
-        LazyColumn(
+        // Title/tabs above and ActionPicker/save below stay pinned; only the tab content
+        // between them scrolls (issue #74 — with everything in one LazyColumn, the save button
+        // sat below ~200 country rows, and selecting a country or PRIVATE gave no visible
+        // feedback). The LazyColumn is the single scroll container: this outer Column has no
+        // verticalScroll, so the "never nest a LazyColumn in a scrollable Column" rule from
+        // AddRuleSheetLayoutTest still holds. weight(fill = false) keeps the sheet
+        // content-sized when the list is short instead of forcing full height.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 16.dp)
                 .imePadding(),
         ) {
-            item {
-                Text(
-                    text = stringResource(R.string.add_rule_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp),
-                )
+            Text(
+                text = stringResource(R.string.add_rule_title),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(bottom = 16.dp),
+            )
 
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    SegmentedButton(
-                        selected = uiState.tab == AddRuleTab.COUNTRY,
-                        onClick = { viewModel.selectTab(AddRuleTab.COUNTRY) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    ) {
-                        Text(stringResource(R.string.add_rule_tab_country))
-                    }
-                    SegmentedButton(
-                        selected = uiState.tab == AddRuleTab.PREFIX,
-                        onClick = { viewModel.selectTab(AddRuleTab.PREFIX) },
-                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    ) {
-                        Text(stringResource(R.string.add_rule_tab_prefix))
-                    }
-                }
-            }
-
-            when (uiState.tab) {
-                AddRuleTab.COUNTRY -> countryPickerItems(
-                    query = uiState.countryQuery,
-                    countries = uiState.countries,
-                    selectedCountry = uiState.selectedCountry,
-                    privateSelected = uiState.selectedCountry == null &&
-                        uiState.patternText == PatternSyntax.PRIVATE_TOKEN,
-                    resultingPattern = uiState.patternText,
-                    collateral = uiState.collateral,
-                    onQueryChange = viewModel::onCountryQueryChanged,
-                    onCountrySelected = viewModel::selectCountry,
-                    onPrivateSelected = viewModel::selectPrivateRule,
-                )
-
-                AddRuleTab.PREFIX -> item {
-                    PrefixInputContent(
-                        patternText = uiState.patternText,
-                        patternValid = uiState.patternValid,
-                        patternMissingWildcard = uiState.patternMissingWildcard,
-                        duplicate = uiState.duplicate,
-                        testInput = uiState.testInput,
-                        testOutcome = uiState.testOutcome,
-                        onPatternTextChange = viewModel::onPatternTextChanged,
-                        onTestInputChange = viewModel::onTestInputChanged,
-                        modifier = Modifier.padding(top = 16.dp),
-                    )
-                }
-            }
-
-            item {
-                ActionPicker(
-                    selected = uiState.selectedAction,
-                    recommended = uiState.recommendedAction,
-                    onSelect = viewModel::selectAction,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                )
-
-                Button(
-                    onClick = { viewModel.save() },
-                    enabled = uiState.saveEnabled,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = uiState.tab == AddRuleTab.COUNTRY,
+                    onClick = { viewModel.selectTab(AddRuleTab.COUNTRY) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                 ) {
-                    Text(stringResource(R.string.add_rule_save))
+                    Text(stringResource(R.string.add_rule_tab_country))
                 }
+                SegmentedButton(
+                    selected = uiState.tab == AddRuleTab.PREFIX,
+                    onClick = { viewModel.selectTab(AddRuleTab.PREFIX) },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) {
+                    Text(stringResource(R.string.add_rule_tab_prefix))
+                }
+            }
+
+            LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
+                when (uiState.tab) {
+                    AddRuleTab.COUNTRY -> countryPickerItems(
+                        query = uiState.countryQuery,
+                        countries = uiState.countries,
+                        selectedCountry = uiState.selectedCountry,
+                        privateSelected = uiState.selectedCountry == null &&
+                            uiState.patternText == PatternSyntax.PRIVATE_TOKEN,
+                        resultingPattern = uiState.patternText,
+                        collateral = uiState.collateral,
+                        onQueryChange = viewModel::onCountryQueryChanged,
+                        onCountrySelected = viewModel::selectCountry,
+                        onPrivateSelected = viewModel::selectPrivateRule,
+                    )
+
+                    AddRuleTab.PREFIX -> item {
+                        PrefixInputContent(
+                            patternText = uiState.patternText,
+                            patternValid = uiState.patternValid,
+                            patternMissingWildcard = uiState.patternMissingWildcard,
+                            duplicate = uiState.duplicate,
+                            testInput = uiState.testInput,
+                            testOutcome = uiState.testOutcome,
+                            onPatternTextChange = viewModel::onPatternTextChanged,
+                            onTestInputChange = viewModel::onTestInputChanged,
+                            modifier = Modifier.padding(top = 16.dp),
+                        )
+                    }
+                }
+            }
+
+            ActionPicker(
+                selected = uiState.selectedAction,
+                recommended = uiState.recommendedAction,
+                onSelect = viewModel::selectAction,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+            )
+
+            Button(
+                onClick = { viewModel.save() },
+                enabled = uiState.saveEnabled,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+            ) {
+                Text(stringResource(R.string.add_rule_save))
             }
         }
     }

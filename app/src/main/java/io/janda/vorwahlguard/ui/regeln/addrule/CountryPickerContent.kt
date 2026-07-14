@@ -56,8 +56,12 @@ fun LazyListScope.countryPickerItems(
             )
 
             if (selectedCountry != null || privateSelected) {
+                // The PRIVATE token is grammar, not copy — show the same human-readable label
+                // the rule list uses instead of "Regel: PRIVATE" (issue #74).
+                val shownPattern =
+                    if (privateSelected) stringResource(R.string.rules_private_label) else resultingPattern
                 Text(
-                    text = stringResource(R.string.add_rule_resulting_pattern, resultingPattern),
+                    text = stringResource(R.string.add_rule_resulting_pattern, shownPattern),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 12.dp),
                 )
