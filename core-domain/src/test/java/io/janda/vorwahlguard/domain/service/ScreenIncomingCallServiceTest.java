@@ -2,6 +2,7 @@ package io.janda.vorwahlguard.domain.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.janda.vorwahlguard.domain.model.DecisionReason;
 import io.janda.vorwahlguard.domain.model.PatternSyntax;
 import io.janda.vorwahlguard.domain.model.PhoneNumber;
 import io.janda.vorwahlguard.domain.model.Rule;
@@ -45,7 +46,7 @@ class ScreenIncomingCallServiceTest {
 
         ScreeningDecision decision = service.decide(grandma, true, AT);
 
-        assertThat(decision).isEqualTo(ScreeningDecision.allow());
+        assertThat(decision).isEqualTo(ScreeningDecision.contactBypass());
     }
 
     @Test
@@ -60,6 +61,7 @@ class ScreenIncomingCallServiceTest {
 
         assertThat(decision.action()).isEqualTo(RuleAction.BLOCK);
         assertThat(decision.matchedRuleId()).isEqualTo("block-at");
+        assertThat(decision.reason()).isEqualTo(DecisionReason.RULE_MATCH);
     }
 
     @Test
