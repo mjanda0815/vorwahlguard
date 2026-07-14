@@ -32,6 +32,9 @@ jobs:
       - name: Domain unit tests
         run: ./gradlew :core-domain:test
 
+      - name: App unit tests
+        run: ./gradlew :app:testDebugUnitTest
+
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug
 
