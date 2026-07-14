@@ -2,6 +2,7 @@ package io.janda.vorwahlguard.ui.protokoll
 
 import io.janda.vorwahlguard.data.events.CallEventEntity
 import io.janda.vorwahlguard.domain.model.DecisionReason
+import io.janda.vorwahlguard.domain.model.PatternSyntax
 import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import java.time.ZoneId
@@ -55,6 +56,18 @@ class CallEventRowUiMapper(private val catalog: CountryCatalog) {
             DecisionReason.RULE_MATCH, null -> null
         }
 
-        return CallEventRowUi(entity.id, timestampText, action, display, allowReason)
+        // The pattern a "create rule from this row" tap would use (issue #76). A real number
+        // maps to an EXACT rule for its E.164; a withheld caller to the PRIVATE token. Hashed
+        // rows expose no number, so no rule can be built — leaving it null makes the row
+        // non-actionable rather than fabricating a rule from a hash (CLAUDE.md §12). Validated
+        // through PatternSyntax so a malformed stored value degrades to null, never a bad rule.
+        val rulePattern = when (display) {
+            is CallEventDisplay.Number ->
+                display.e164.takeIf { PatternSyntax.isValid(it) }
+            CallEventDisplay.Private -> PatternSyntax.PRIVATE_TOKEN
+            is CallEventDisplay.Region, is CallEventDisplay.UnknownRegion -> null
+        }
+
+        return CallEventRowUi(entity.id, timestampText, action, display, allowReason, rulePattern)
     }
 }
