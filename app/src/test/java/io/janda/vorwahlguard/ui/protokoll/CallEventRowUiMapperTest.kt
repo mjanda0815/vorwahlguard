@@ -139,6 +139,38 @@ class CallEventRowUiMapperTest {
     }
 
     @Test
+    fun `an unhashed number row exposes its E164 as the rule pattern`() {
+        val row = mapper.toRow(entity(isHashed = false, numberOrHash = "+4915112345678"), locale, zone)
+
+        assertEquals("+4915112345678", row?.rulePattern)
+    }
+
+    @Test
+    fun `a withheld row exposes the PRIVATE token as the rule pattern`() {
+        val row = mapper.toRow(entity(isHashed = false, numberOrHash = "PRIVATE"), locale, zone)
+
+        assertEquals("PRIVATE", row?.rulePattern)
+    }
+
+    @Test
+    fun `a hashed row exposes no rule pattern - a hash yields no number to build a rule from`() {
+        every { catalog.byIso2("AT") } returns Optional.empty()
+
+        val row = mapper.toRow(entity(isHashed = true, regionCode = "AT"), locale, zone)
+
+        assertNull(row?.rulePattern)
+    }
+
+    @Test
+    fun `a malformed stored number degrades to no rule pattern instead of a bad rule`() {
+        // A stored "number" that is not a valid pattern (leading zero after '+') must leave the
+        // row non-actionable, never fabricate an invalid EXACT rule.
+        val row = mapper.toRow(entity(isHashed = false, numberOrHash = "+0123"), locale, zone)
+
+        assertNull(row?.rulePattern)
+    }
+
+    @Test
     fun `timestampText matches the SHORT localized date time formatter for the given locale and zone`() {
         val expected = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
             .withLocale(locale)

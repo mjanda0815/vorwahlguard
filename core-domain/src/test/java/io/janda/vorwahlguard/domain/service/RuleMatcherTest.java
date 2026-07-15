@@ -3,6 +3,7 @@ package io.janda.vorwahlguard.domain.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.janda.vorwahlguard.domain.model.PatternSyntax;
+import io.janda.vorwahlguard.domain.model.DecisionReason;
 import io.janda.vorwahlguard.domain.model.PhoneNumber;
 import io.janda.vorwahlguard.domain.model.Rule;
 import io.janda.vorwahlguard.domain.model.RuleAction;
@@ -35,6 +36,7 @@ class RuleMatcherTest {
 
         assertThat(decision.matchedRuleId()).isEqualTo("operator");
         assertThat(decision.action()).isEqualTo(RuleAction.BLOCK);
+        assertThat(decision.reason()).isEqualTo(DecisionReason.RULE_MATCH);
     }
 
     @Test
@@ -87,6 +89,7 @@ class RuleMatcherTest {
         assertThat(decision.action()).isEqualTo(RuleAction.ALLOW);
         assertThat(decision.matchedRuleId()).isNull();
         assertThat(decision.matched()).isFalse();
+        assertThat(decision.reason()).isEqualTo(DecisionReason.NO_MATCH);
     }
 
     @Test
