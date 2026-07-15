@@ -312,6 +312,36 @@ class VorwahlGuardScreeningServiceTest {
     }
 
     @Test
+    fun `bypass disabled never queries contacts and passes isKnownContact false`() {
+        val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
+        // Bypass off (first arg false) even though the caller *is* a contact: the setting must be
+        // consulted before contacts, so contactsLookup is never queried.
+        every { settingsCache.current() } returns Settings(false, 90, false, false, false)
+        every { normalizer.normalize(any(), any()) } returns number
+        every { screenIncomingCall.decide(number, false, Instant.EPOCH) } returns
+            ScreeningDecision(RuleAction.BLOCK, "rule-block")
+
+        service.onScreenCall(callWithHandle("+4915112345678"))
+
+        verify(exactly = 0) { contactsLookup.isKnownContact(any()) }
+        verify(exactly = 1) { screenIncomingCall.decide(number, false, Instant.EPOCH) }
+    }
+
+    @Test
+    fun `a withheld caller with bypass on never queries contacts`() {
+        // number.isKnown() is false for a withheld caller, so the contacts lookup short-circuits
+        // even with bypass enabled — you cannot match a null number against the address book.
+        every { settingsCache.current() } returns Settings(true, 90, false, false, false)
+        every { screenIncomingCall.decide(PhoneNumber.UNKNOWN, false, Instant.EPOCH) } returns
+            ScreeningDecision.allow()
+
+        service.onScreenCall(callWithNoHandle())
+
+        verify(exactly = 0) { contactsLookup.isKnownContact(any()) }
+        verify(exactly = 1) { screenIncomingCall.decide(PhoneNumber.UNKNOWN, false, Instant.EPOCH) }
+    }
+
+    @Test
     fun `contact bypass with logAllowedCalls on records a reason-only event`() {
         val number = PhoneNumber("+4915112345678", "+4915112345678", "DE")
         every { settingsCache.current() } returns Settings(true, 90, false, false, true)
