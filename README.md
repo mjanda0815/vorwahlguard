@@ -124,9 +124,13 @@ Erklärung versprochen:
 
 ## Installation
 
-Lade die neueste APK aus den [Releases](https://github.com/mjanda0815/vorwahlguard/releases)
-herunter und installiere sie. Erteile beim ersten Start die Anrufschutz-Rolle, wenn du dazu
-aufgefordert wirst.
+1. Lade die neueste APK aus den [Releases](https://github.com/mjanda0815/vorwahlguard/releases)
+   herunter.
+2. Erlaube am Handy unter *Einstellungen → Apps → Spezieller Zugriff → Unbekannte Apps
+   installieren* die App, mit der du die APK öffnest (Browser oder Dateimanager). Bei einer
+   seitlich geladenen App zeigt Google Play Protect eventuell eine Warnung — sie lässt sich
+   bestätigen.
+3. APK antippen, installieren und beim ersten Start die Anrufschutz-Rolle erteilen.
 
 Aktuell nicht bei Google Play verfügbar — siehe [`PROJECT.md`](PROJECT.md) §9.
 
