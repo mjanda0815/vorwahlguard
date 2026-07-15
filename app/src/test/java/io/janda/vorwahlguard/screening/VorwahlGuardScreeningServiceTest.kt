@@ -119,13 +119,22 @@ class VorwahlGuardScreeningServiceTest {
 
     private fun callWithHandle(number: String): Call.Details {
         val details = mockk<Call.Details>()
+        every { details.callDirection } returns Call.Details.DIRECTION_INCOMING
         every { details.handle } returns Uri.fromParts("tel", number, null)
         return details
     }
 
     private fun callWithNoHandle(): Call.Details {
         val details = mockk<Call.Details>()
+        every { details.callDirection } returns Call.Details.DIRECTION_INCOMING
         every { details.handle } returns null
+        return details
+    }
+
+    private fun outgoingCall(number: String): Call.Details {
+        val details = mockk<Call.Details>()
+        every { details.callDirection } returns Call.Details.DIRECTION_OUTGOING
+        every { details.handle } returns Uri.fromParts("tel", number, null)
         return details
     }
 
@@ -179,6 +188,22 @@ class VorwahlGuardScreeningServiceTest {
         assertEquals(1, responses.size)
         assertFalse(responses.single().disallowCall)
         assertFalse(responses.single().silenceCall)
+    }
+
+    @Test
+    fun `an outgoing call is allowed once, never screened, and never recorded`() {
+        // Even with a BLOCK rule that would match the number, an outgoing call must pass
+        // untouched: VorwahlGuard only screens incoming calls (PROJECT.md §1).
+        every { settingsCache.current() } returns Settings(false, 90, false, false, true)
+
+        service.onScreenCall(outgoingCall("+4915112345678"))
+
+        assertEquals(1, responses.size)
+        assertFalse(responses.single().disallowCall)
+        assertFalse(responses.single().silenceCall)
+        verify(exactly = 0) { normalizer.normalize(any(), any()) }
+        verify(exactly = 0) { screenIncomingCall.decide(any(), any(), any()) }
+        verify(exactly = 0) { recorder.record(any()) }
     }
 
     @Test
