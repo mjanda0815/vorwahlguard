@@ -73,7 +73,8 @@ class ProtokollListContentTest {
         action: RuleAction = RuleAction.BLOCK,
         display: CallEventDisplay,
         allowReason: AllowReasonUi? = null,
-    ): CallEventRowUi = CallEventRowUi(id, timestampText, action, display, allowReason)
+        contactName: String? = null,
+    ): CallEventRowUi = CallEventRowUi(id, timestampText, action, display, allowReason, contactName = contactName)
 
     @Test
     fun numberRowShowsTheE164TextAndTheActionLabel() {
@@ -153,6 +154,33 @@ class ProtokollListContentTest {
         setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
 
         composeTestRule.onNodeWithText(logReasonNoRule).assertExists()
+    }
+
+    @Test
+    fun aContactBypassRowWithAContactNameShowsTheNameInPlaceOfTheNumber() {
+        val displayRow = row(
+            action = RuleAction.ALLOW,
+            display = CallEventDisplay.Number("+4915112345678"),
+            allowReason = AllowReasonUi.CONTACT_BYPASS,
+            contactName = "Alex Kontakt",
+        )
+        setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
+
+        composeTestRule.onNodeWithText("Alex Kontakt", substring = true).assertExists()
+        composeTestRule.onNodeWithText("+4915112345678", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aContactBypassRowWithoutAContactNameFallsBackToTheNumber() {
+        val displayRow = row(
+            action = RuleAction.ALLOW,
+            display = CallEventDisplay.Number("+4915112345678"),
+            allowReason = AllowReasonUi.CONTACT_BYPASS,
+            contactName = null,
+        )
+        setContent(ProtokollUiState(events = listOf(displayRow), hasAnyEvents = true, loaded = true))
+
+        composeTestRule.onNodeWithText("+4915112345678", substring = true).assertExists()
     }
 
     @Test

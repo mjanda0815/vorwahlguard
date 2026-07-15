@@ -173,7 +173,10 @@ private fun AllowReasonUi.labelRes(): Int = when (this) {
 
 @Composable
 private fun callEventRowLabelText(row: CallEventRowUi): String = when (val display = row.display) {
-    is CallEventDisplay.Number -> display.e164
+    // A resolved contact name replaces the number for contact-bypass rows (issue #85): the row's
+    // "Kontakt" caption already says it was a contact, so showing the name is more useful than the
+    // digits. Falls back to the E.164 when no name resolved.
+    is CallEventDisplay.Number -> row.contactName ?: display.e164
     is CallEventDisplay.Region -> display.name
     is CallEventDisplay.UnknownRegion -> stringResource(R.string.log_region_unknown)
     CallEventDisplay.Private -> stringResource(R.string.rules_private_label)
