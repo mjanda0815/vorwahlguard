@@ -144,28 +144,36 @@ class VorwahlGuardScreeningService : CallScreeningService() {
             // a bounded wait keeps it screened without threatening the ~5s deadline.
             cachesWarmed.await(WARM_TIMEOUT_MS, TimeUnit.MILLISECONDS)
 
-            // Call.Details.getHandle() is null for a withheld/private caller ID (CLAUDE.md §3
-            // rule 2) — never dereference it unguarded.
-            val handle = callDetails.handle
-            val number = if (handle == null) {
-                PhoneNumber.UNKNOWN
+            if (callDetails.callDirection != Call.Details.DIRECTION_INCOMING) {
+                // VorwahlGuard only screens *incoming* calls (PROJECT.md §1). Telecom can invoke
+                // onScreenCall() for outgoing calls too on some OEMs; those are allowed unchanged
+                // and never recorded (decision stays null, so the recording gate below skips
+                // them). respondToCall() is still called exactly once, below.
+                CallResponse.Builder().build()
             } else {
-                normalizer.normalize(handle.schemeSpecificPart, simRegionProvider.current())
+                // Call.Details.getHandle() is null for a withheld/private caller ID (CLAUDE.md §3
+                // rule 2) — never dereference it unguarded.
+                val handle = callDetails.handle
+                val number = if (handle == null) {
+                    PhoneNumber.UNKNOWN
+                } else {
+                    normalizer.normalize(handle.schemeSpecificPart, simRegionProvider.current())
+                }
+                screenedNumber = number
+
+                val settings = settingsCache.current()
+                logAllowedCalls = settings.logAllowedCalls()
+                val isContact = settings.contactsBypassEnabled() &&
+                    number.isKnown() &&
+                    contactsLookup.isKnownContact(number)
+
+                val computed = screenIncomingCall.decide(number, isContact, clock.now())
+                val mapped = mapper.toCallResponse(computed.action(), settings.notifyOnBlock())
+                // Committed only once the response is built: a decision whose mapping threw falls
+                // open to ALLOW below, and recording it would claim an action that never happened.
+                decision = computed
+                mapped
             }
-            screenedNumber = number
-
-            val settings = settingsCache.current()
-            logAllowedCalls = settings.logAllowedCalls()
-            val isContact = settings.contactsBypassEnabled() &&
-                number.isKnown() &&
-                contactsLookup.isKnownContact(number)
-
-            val computed = screenIncomingCall.decide(number, isContact, clock.now())
-            val mapped = mapper.toCallResponse(computed.action(), settings.notifyOnBlock())
-            // Committed only once the response is built: a decision whose mapping threw falls
-            // open to ALLOW below, and recording it would claim an action that never happened.
-            decision = computed
-            mapped
         } catch (t: Throwable) {
             decision = null
             // Never log the number itself (CLAUDE.md §1, §12) — only the failure shape.
