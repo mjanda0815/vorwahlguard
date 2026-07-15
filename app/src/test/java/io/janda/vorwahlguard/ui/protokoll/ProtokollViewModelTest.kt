@@ -1,5 +1,6 @@
 package io.janda.vorwahlguard.ui.protokoll
 
+import io.janda.vorwahlguard.data.contacts.ContactNameResolver
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.events.CallEventEntity
 import io.janda.vorwahlguard.data.rules.CreateRuleResult
@@ -13,6 +14,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import java.time.Instant
 import java.util.Optional
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +53,7 @@ class ProtokollViewModelTest {
     private lateinit var dao: CallEventDao
     private lateinit var countryCatalog: CountryCatalog
     private lateinit var ruleWriter: RuleWriter
+    private lateinit var contactNameResolver: ContactNameResolver
     private val createdPatterns = mutableListOf<String>()
     private val createdActions = mutableListOf<RuleAction>()
 
@@ -89,6 +92,19 @@ class ProtokollViewModelTest {
         DecisionReason.RULE_MATCH.name,
     )
 
+    // An allowed call from a known contact (issue #85): no matched rule, reason CONTACT_BYPASS,
+    // a real (unhashed) number the view model resolves a display name for.
+    private val contactBypassRow = CallEventEntity(
+        "contact-1",
+        Instant.parse("2026-07-13T11:00:00Z"),
+        "+436649999999",
+        false,
+        "AT",
+        null,
+        RuleAction.ALLOW.name,
+        DecisionReason.CONTACT_BYPASS.name,
+    )
+
     @Before
     fun setUp() {
         eventsFlow = MutableStateFlow(emptyList())
@@ -104,10 +120,15 @@ class ProtokollViewModelTest {
         coEvery {
             ruleWriter.createIfAbsent(capture(createdPatterns), capture(createdActions))
         } returns CreateRuleResult.CREATED
+
+        // Fail-closed default: no contact resolves unless a test opts in. Matches
+        // ContactNameResolver's own null-on-no-match/no-permission contract.
+        contactNameResolver = mockk()
+        every { contactNameResolver.nameFor(any()) } returns null
     }
 
     private fun createViewModel(): ProtokollViewModel {
-        return ProtokollViewModel(dao, countryCatalog, ruleWriter, dispatcher)
+        return ProtokollViewModel(dao, countryCatalog, ruleWriter, contactNameResolver, dispatcher)
     }
 
     @Test
@@ -304,5 +325,56 @@ class ProtokollViewModelTest {
 
         assertNull(viewModel.uiState.value.pendingRule)
         coVerify(exactly = 0) { ruleWriter.createIfAbsent(any(), any()) }
+    }
+
+    // --- issue #85: contact name in the log for contact-bypass rows ---
+
+    @Test
+    fun `a contact-bypass row carries the resolved contact name`() = runTest(dispatcher) {
+        every { contactNameResolver.nameFor("+436649999999") } returns "Alex Kontakt"
+        eventsFlow.value = listOf(contactBypassRow)
+
+        val viewModel = createViewModel()
+        val row = viewModel.uiState.value.events.single()
+
+        assertEquals("Alex Kontakt", row.contactName)
+        assertEquals(AllowReasonUi.CONTACT_BYPASS, row.allowReason)
+    }
+
+    @Test
+    fun `a contact-bypass row with no resolvable name keeps a null contact name`() = runTest(dispatcher) {
+        every { contactNameResolver.nameFor(any()) } returns null
+        eventsFlow.value = listOf(contactBypassRow)
+
+        val viewModel = createViewModel()
+        val row = viewModel.uiState.value.events.single()
+
+        assertNull(row.contactName)
+    }
+
+    @Test
+    fun `a rule-match number row is never looked up for a contact name`() = runTest(dispatcher) {
+        // blockRow is a RULE_MATCH, not a contact bypass — resolving a name for it would be wrong
+        // and a wasted ContactsContract query.
+        eventsFlow.value = listOf(blockRow)
+
+        val viewModel = createViewModel()
+
+        assertNull(viewModel.uiState.value.events.single().contactName)
+        verify(exactly = 0) { contactNameResolver.nameFor(any()) }
+    }
+
+    @Test
+    fun `repeated emissions of the same contact number resolve the name only once`() = runTest(dispatcher) {
+        every { contactNameResolver.nameFor("+436649999999") } returns "Alex Kontakt"
+        eventsFlow.value = listOf(contactBypassRow)
+        val viewModel = createViewModel()
+
+        // A second emission re-maps the whole list; the per-number memo must serve the cached name
+        // rather than re-querying.
+        eventsFlow.value = listOf(contactBypassRow.copy(id = "contact-2"))
+
+        assertEquals("Alex Kontakt", viewModel.uiState.value.events.single().contactName)
+        verify(exactly = 1) { contactNameResolver.nameFor("+436649999999") }
     }
 }

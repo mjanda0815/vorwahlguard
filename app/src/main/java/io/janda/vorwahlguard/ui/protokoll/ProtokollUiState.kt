@@ -44,6 +44,14 @@ data class CallEventRowUi(
     /** Non-null only for a logged allowed call that did not come from a rule match (issue #59). */
     val allowReason: AllowReasonUi? = null,
     val rulePattern: String? = null,
+    /**
+     * The saved contact's display name for a contact-bypass row (issue #85), resolved at display
+     * time by [ProtokollViewModel] via [io.janda.vorwahlguard.data.contacts.ContactNameResolver].
+     * `null` unless this is a [AllowReasonUi.CONTACT_BYPASS] row backed by a [CallEventDisplay.Number]
+     * whose number still matches a contact and `READ_CONTACTS` is granted — the log then shows the
+     * name in place of the number ([callEventRowLabelText]); otherwise the number stands.
+     */
+    val contactName: String? = null,
 )
 
 /**

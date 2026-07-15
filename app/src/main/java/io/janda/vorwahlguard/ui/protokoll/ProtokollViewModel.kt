@@ -3,6 +3,7 @@ package io.janda.vorwahlguard.ui.protokoll
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.janda.vorwahlguard.data.contacts.ContactNameResolver
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.rules.CreateRuleResult
 import io.janda.vorwahlguard.data.rules.RuleWriter
@@ -37,10 +38,19 @@ class ProtokollViewModel @Inject constructor(
     private val dao: CallEventDao,
     countryCatalog: CountryCatalog,
     private val ruleWriter: RuleWriter,
+    private val contactNameResolver: ContactNameResolver,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val mapper = CallEventRowUiMapper(countryCatalog)
+
+    // Memoizes ContactNameResolver.nameFor() per E.164 for the lifetime of the screen. Every
+    // Flow emission re-maps the whole list, so without this a screen full of contact-bypass rows
+    // would re-query ContactsContract on each. Populated and read only from the single
+    // observeNewestFirst() collect coroutine below (off the main thread, serialized), so a plain
+    // map needs no synchronization; null values are cached too, so a not-a-contact number is
+    // looked up at most once.
+    private val contactNameCache = HashMap<String, String?>()
 
     private var allRows: List<CallEventRowUi> = emptyList()
     private var selectedFilter: RuleAction? = null
@@ -59,7 +69,10 @@ class ProtokollViewModel @Inject constructor(
                 // observeNewestFirst() already orders by occurred_at DESC — trust that order,
                 // do not re-sort here.
                 allRows = withContext(defaultDispatcher) {
-                    entities.mapNotNull { mapper.toRow(it, Locale.getDefault(), ZoneId.systemDefault()) }
+                    entities.mapNotNull { entity ->
+                        mapper.toRow(entity, Locale.getDefault(), ZoneId.systemDefault())
+                            ?.let(::withContactName)
+                    }
                 }
                 loaded = true
                 recompute()
@@ -110,6 +123,30 @@ class ProtokollViewModel @Inject constructor(
             }
             _effects.send(effect)
         }
+    }
+
+    /**
+     * Resolves the saved contact name for a contact-bypass row (issue #85) so the log can show it
+     * in place of the number. Only [AllowReasonUi.CONTACT_BYPASS] rows backed by a real
+     * [CallEventDisplay.Number] are looked up — a hashed row exposes no number, a withheld caller
+     * has none, and a rule-match row is not a contact call. Returns the row unchanged when nothing
+     * resolves (no permission, no match): [ContactNameResolver] fails closed to `null`.
+     */
+    private fun withContactName(row: CallEventRowUi): CallEventRowUi {
+        if (row.allowReason != AllowReasonUi.CONTACT_BYPASS) return row
+        val e164 = (row.display as? CallEventDisplay.Number)?.e164 ?: return row
+        val name = contactNameCache.getOrCache(e164)
+        return if (name == null) row else row.copy(contactName = name)
+    }
+
+    private fun HashMap<String, String?>.getOrCache(e164: String): String? {
+        // Not getOrPut: it re-invokes the loader when the cached value is null, defeating the
+        // point of caching a "not a contact" result. containsKey distinguishes "cached null" from
+        // "never looked up".
+        if (containsKey(e164)) return this[e164]
+        val name = contactNameResolver.nameFor(e164)
+        this[e164] = name
+        return name
     }
 
     private fun recompute() {
