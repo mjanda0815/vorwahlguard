@@ -2,21 +2,16 @@ package io.janda.vorwahlguard.ui.protokoll
 
 import io.janda.vorwahlguard.data.events.CallEventDao
 import io.janda.vorwahlguard.data.events.CallEventEntity
-import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
+import io.janda.vorwahlguard.data.rules.CreateRuleResult
 import io.janda.vorwahlguard.data.rules.RuleWriter
 import io.janda.vorwahlguard.domain.model.Country
 import io.janda.vorwahlguard.domain.model.DecisionReason
-import io.janda.vorwahlguard.domain.model.PatternSyntax
-import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
-import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.ui.regeln.addrule.MainDispatcherRule
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import java.time.Instant
 import java.util.Optional
@@ -55,12 +50,9 @@ class ProtokollViewModelTest {
     private lateinit var eventsFlow: MutableStateFlow<List<CallEventEntity>>
     private lateinit var dao: CallEventDao
     private lateinit var countryCatalog: CountryCatalog
-    private lateinit var rulesFlow: MutableStateFlow<List<Rule>>
-    private lateinit var ruleSnapshotSource: RuleSnapshotSource
     private lateinit var ruleWriter: RuleWriter
-    private lateinit var clock: Clock
-    private val savedRules = mutableListOf<Rule>()
-    private val fixedInstant: Instant = Instant.parse("2026-07-15T12:00:00Z")
+    private val createdPatterns = mutableListOf<String>()
+    private val createdActions = mutableListOf<RuleAction>()
 
     // Fixtures deliberately constructed in an order that would look "wrong" if the view model
     // re-sorted by occurredAt: silenceRow's occurredAt is *newer* than blockRow's, so a
@@ -106,20 +98,16 @@ class ProtokollViewModelTest {
         countryCatalog = mockk()
         every { countryCatalog.byIso2("AT") } returns Optional.of(austria)
 
-        rulesFlow = MutableStateFlow(emptyList())
-        ruleSnapshotSource = mockk()
-        every { ruleSnapshotSource.observe() } returns rulesFlow
-
         ruleWriter = mockk()
-        savedRules.clear()
-        coEvery { ruleWriter.save(capture(savedRules)) } just Runs
-
-        clock = mockk()
-        every { clock.now() } returns fixedInstant
+        createdPatterns.clear()
+        createdActions.clear()
+        coEvery {
+            ruleWriter.createIfAbsent(capture(createdPatterns), capture(createdActions))
+        } returns CreateRuleResult.CREATED
     }
 
     private fun createViewModel(): ProtokollViewModel {
-        return ProtokollViewModel(dao, countryCatalog, ruleSnapshotSource, ruleWriter, clock, dispatcher)
+        return ProtokollViewModel(dao, countryCatalog, ruleWriter, dispatcher)
     }
 
     @Test
@@ -267,7 +255,10 @@ class ProtokollViewModelTest {
     }
 
     @Test
-    fun `creating a rule for a new pattern persists it and emits RuleCreated`() = runTest(dispatcher) {
+    fun `creating a rule for a new pattern delegates to createIfAbsent and emits RuleCreated`() = runTest(dispatcher) {
+        coEvery {
+            ruleWriter.createIfAbsent(capture(createdPatterns), capture(createdActions))
+        } returns CreateRuleResult.CREATED
         eventsFlow.value = listOf(blockRow)
         val viewModel = createViewModel()
         val effects = mutableListOf<ProtokollEffect>()
@@ -276,22 +267,19 @@ class ProtokollViewModelTest {
 
         viewModel.createRule(RuleAction.BLOCK)
 
-        coVerify(exactly = 1) { ruleWriter.save(any()) }
-        val saved = savedRules.single()
-        assertEquals("+4915112345678", saved.pattern().text())
-        assertEquals(RuleAction.BLOCK, saved.action())
-        assertTrue(saved.enabled())
-        assertEquals(fixedInstant, saved.createdAt())
+        // Duplicate gating + rule construction are RuleWriter's job now (issue #78); the
+        // ViewModel only forwards the tapped row's pattern + action and maps the result.
+        coVerify(exactly = 1) { ruleWriter.createIfAbsent("+4915112345678", RuleAction.BLOCK) }
+        assertEquals(listOf("+4915112345678"), createdPatterns)
+        assertEquals(listOf(RuleAction.BLOCK), createdActions)
         assertEquals(listOf(ProtokollEffect.RuleCreated(RuleAction.BLOCK)), effects)
         assertNull(viewModel.uiState.value.pendingRule)
         job.cancel()
     }
 
     @Test
-    fun `creating a rule for an existing pattern writes nothing and emits RuleAlreadyExists`() = runTest(dispatcher) {
-        rulesFlow.value = listOf(
-            Rule("existing", PatternSyntax.parse("+4915112345678"), RuleAction.SILENCE, true, null, Instant.EPOCH),
-        )
+    fun `createIfAbsent reporting ALREADY_EXISTS surfaces RuleAlreadyExists`() = runTest(dispatcher) {
+        coEvery { ruleWriter.createIfAbsent(any(), any()) } returns CreateRuleResult.ALREADY_EXISTS
         eventsFlow.value = listOf(blockRow)
         val viewModel = createViewModel()
         val effects = mutableListOf<ProtokollEffect>()
@@ -300,14 +288,13 @@ class ProtokollViewModelTest {
 
         viewModel.createRule(RuleAction.ALLOW)
 
-        coVerify(exactly = 0) { ruleWriter.save(any()) }
         assertEquals(listOf(ProtokollEffect.RuleAlreadyExists), effects)
         assertNull(viewModel.uiState.value.pendingRule)
         job.cancel()
     }
 
     @Test
-    fun `dismissing the picker clears the pending rule without writing`() = runTest(dispatcher) {
+    fun `dismissing the picker clears the pending rule without creating anything`() = runTest(dispatcher) {
         eventsFlow.value = listOf(blockRow)
         val viewModel = createViewModel()
         viewModel.onRowClicked(viewModel.uiState.value.events.single())
@@ -316,6 +303,6 @@ class ProtokollViewModelTest {
         viewModel.dismissPendingRule()
 
         assertNull(viewModel.uiState.value.pendingRule)
-        coVerify(exactly = 0) { ruleWriter.save(any()) }
+        coVerify(exactly = 0) { ruleWriter.createIfAbsent(any(), any()) }
     }
 }

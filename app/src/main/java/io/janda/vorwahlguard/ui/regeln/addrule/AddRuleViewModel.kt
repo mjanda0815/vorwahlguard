@@ -12,13 +12,11 @@ import io.janda.vorwahlguard.domain.model.PatternKind
 import io.janda.vorwahlguard.domain.model.PatternSyntax
 import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
-import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.domain.port.out.NumberNormalizer
 import io.janda.vorwahlguard.screening.SimRegionProvider
 import java.text.Collator
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +44,6 @@ class AddRuleViewModel @Inject constructor(
     private val ruleWriter: RuleWriter,
     numberNormalizer: NumberNormalizer,
     private val simRegionProvider: SimRegionProvider,
-    private val clock: Clock,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -191,13 +188,14 @@ class AddRuleViewModel @Inject constructor(
 
     fun save() {
         val state = _uiState.value
-        if (!state.saveEnabled) {
+        if (!state.saveEnabled || !PatternSyntax.isValid(state.patternText)) {
             return
         }
-        val pattern = runCatching { PatternSyntax.parse(state.patternText) }.getOrNull() ?: return
         viewModelScope.launch {
-            val rule = Rule(UUID.randomUUID().toString(), pattern, state.selectedAction, true, null, clock.now())
-            ruleWriter.save(rule)
+            // saveEnabled already gates on the live duplicate check for UI feedback;
+            // createIfAbsent is the atomic backstop (issue #78) — if a rule for this pattern was
+            // created elsewhere in the meantime it simply no-ops, never a second identical rule.
+            ruleWriter.createIfAbsent(state.patternText, state.selectedAction)
             _uiState.update { it.copy(saved = true) }
         }
     }

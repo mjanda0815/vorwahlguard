@@ -1,6 +1,7 @@
 package io.janda.vorwahlguard.domain.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
@@ -43,5 +44,27 @@ class ScreeningDecisionTest {
     @Test
     void allowAndContactBypassAreNotEqual() {
         assertThat(ScreeningDecision.allow()).isNotEqualTo(ScreeningDecision.contactBypass());
+    }
+
+    @Test
+    void ruleMatchWithoutARuleIdIsRejected() {
+        assertThatThrownBy(() -> new ScreeningDecision(RuleAction.BLOCK, null, DecisionReason.RULE_MATCH))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void aNonRuleMatchReasonWithARuleIdIsRejected() {
+        assertThatThrownBy(() -> new ScreeningDecision(RuleAction.ALLOW, "rule-1", DecisionReason.NO_MATCH))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ScreeningDecision(RuleAction.ALLOW, "rule-1", DecisionReason.CONTACT_BYPASS))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void nullActionOrReasonIsRejected() {
+        assertThatThrownBy(() -> new ScreeningDecision(null, null, DecisionReason.NO_MATCH))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new ScreeningDecision(RuleAction.ALLOW, null, null))
+                .isInstanceOf(NullPointerException.class);
     }
 }
