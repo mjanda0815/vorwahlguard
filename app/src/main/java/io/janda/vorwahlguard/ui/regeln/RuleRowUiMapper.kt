@@ -4,14 +4,13 @@ import io.janda.vorwahlguard.domain.model.PatternKind
 import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import java.util.Locale
-import javax.inject.Inject
 
 /**
  * Builds [RuleRowUi] from a [Rule]. Mirrors `CountryUiMapper`'s structure: a small stateless
  * class the owning `ViewModel` constructs itself (CLAUDE.md's addrule package convention),
  * rather than something Hilt injects directly into the ViewModel's constructor.
  */
-class RuleRowUiMapper @Inject constructor(
+class RuleRowUiMapper(
     private val catalog: CountryCatalog,
 ) {
 
