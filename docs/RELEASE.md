@@ -174,9 +174,12 @@ Starting point in `app/proguard-rules.pro`:
 -keepclassmembers class com.google.i18n.phonenumbers.** { *; }
 ```
 
-**This is a starting point, not a verified fix.** The only way to know is to build release, install
-it on the device, and create a rule for `+43*`. If the country picker is empty or normalisation
-throws, R8 stripped something. Do not ship a release APK you have only tested as debug.
+**Verified on-device on 2026-07-15** (release build v0.2.0, versionCode 148, v2 signature): the
+country picker opened and a `+43*` rule was created with no crash and no normalisation error — the
+keep-rules above are sufficient for the picker and number-normalisation paths. Re-run this check
+after any libphonenumber version bump or change to these rules; it is the only way to know. The
+failure mode is an empty country picker or a normalisation exception, visible only in a release
+build on a real device. Do not ship a release APK you have only tested as debug.
 
 The `CallScreeningService` itself survives because it is named in the manifest.
 
