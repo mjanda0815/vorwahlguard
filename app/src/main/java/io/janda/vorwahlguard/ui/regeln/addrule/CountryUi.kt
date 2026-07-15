@@ -5,7 +5,6 @@ import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import java.text.Collator
 import java.text.Normalizer
 import java.util.Locale
-import javax.inject.Inject
 
 /**
  * UI-ready projection of a [Country] for the "Land wählen" tab of `AddRuleSheet`: the flag and
@@ -26,7 +25,7 @@ data class CountryUi(
  * [Locale.getDefault] changed since the cache was built (the caller is expected to always pass
  * the current default).
  */
-class CountryUiMapper @Inject constructor(
+class CountryUiMapper(
     private val catalog: CountryCatalog,
 ) {
 

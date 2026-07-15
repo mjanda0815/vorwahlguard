@@ -5,8 +5,10 @@
   NON-NEGOTIABLE: this file must never declare any network permission (no INTERNET, no
   network-state access). CI fails the build if one appears. See CLAUDE.md §1 and §12.
 
-  The CallScreeningService is declared here (permission + intent filter + exported) but its
-  screening logic is not implemented yet — M0 ships a fail-open stub. See CLAUDE.md §3, §M2.
+  The CallScreeningService (VorwahlGuardScreeningService) is declared here with the required
+  BIND_SCREENING_SERVICE permission, intent filter and android:exported="true" (CLAUDE.md §3
+  rule 6). It is fully implemented: it screens incoming calls against the user's rules and, on
+  any exception, falls through to allowing the call (fail-open, CLAUDE.md §3 rule 3).
 
   READ_CONTACTS (issue #29, user-approved) is the app's first and only declared permission. It
   is not a network permission and leaves the invariant above unchanged — it powers the on-device

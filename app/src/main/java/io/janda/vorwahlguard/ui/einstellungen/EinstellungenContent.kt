@@ -67,6 +67,7 @@ fun EinstellungenContent(
             .padding(16.dp),
     ) {
         RoleStatusRow(
+            roleAvailable = state.roleAvailable,
             roleHeld = state.roleHeld,
             onRequestRole = onRequestRole,
             modifier = Modifier.padding(bottom = 24.dp),
@@ -111,7 +112,12 @@ private fun SectionTitle(title: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun RoleStatusRow(roleHeld: Boolean, onRequestRole: () -> Unit, modifier: Modifier = Modifier) {
+private fun RoleStatusRow(
+    roleAvailable: Boolean,
+    roleHeld: Boolean,
+    onRequestRole: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier.fillMaxWidth()) {
         SectionTitle(stringResource(R.string.settings_role_section_title))
         Text(
@@ -122,7 +128,10 @@ private fun RoleStatusRow(roleHeld: Boolean, onRequestRole: () -> Unit, modifier
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp),
         )
-        if (!roleHeld) {
+        // Only offer the button where the role can actually be requested — same gating the
+        // Übersicht card uses (roleAvailable && !roleHeld). Otherwise createRoleRequestIntent()
+        // returns null and the button would silently no-op.
+        if (roleAvailable && !roleHeld) {
             Button(onClick = onRequestRole, modifier = Modifier.padding(top = 12.dp)) {
                 // Reuses the identical Übersicht role-warning copy (CLAUDE.md §5's action-neutral
                 // wording) rather than duplicating a second string with the same text.

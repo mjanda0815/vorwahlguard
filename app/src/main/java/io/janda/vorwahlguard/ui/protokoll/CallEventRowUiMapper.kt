@@ -44,10 +44,7 @@ class CallEventRowUiMapper(private val catalog: CountryCatalog) {
             CallEventDisplay.Number(entity.numberOrHash)
         }
 
-        val timestampText = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
-            .withLocale(locale)
-            .withZone(zone)
-            .format(entity.occurredAt)
+        val timestampText = formatter(locale, zone).format(entity.occurredAt)
 
         val reason = runCatching { DecisionReason.valueOf(entity.reason) }.getOrNull()
         val allowReason = when (reason) {
@@ -69,5 +66,27 @@ class CallEventRowUiMapper(private val catalog: CountryCatalog) {
         }
 
         return CallEventRowUi(entity.id, timestampText, action, display, allowReason, rulePattern)
+    }
+
+    // The formatter is expensive to build; ProtokollViewModel calls toRow() once per row on every
+    // Flow emission, all on a single dispatcher, so a plain (non-synchronized) memo keyed by
+    // locale+zone is safe and rebuilds only when either changes.
+    private var cachedLocale: Locale? = null
+    private var cachedZone: ZoneId? = null
+    private var cachedFormatter: DateTimeFormatter? = null
+
+    private fun formatter(locale: Locale, zone: ZoneId): DateTimeFormatter {
+        val current = cachedFormatter
+        if (current != null && locale == cachedLocale && zone == cachedZone) {
+            return current
+        }
+        return DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+            .withLocale(locale)
+            .withZone(zone)
+            .also {
+                cachedFormatter = it
+                cachedLocale = locale
+                cachedZone = zone
+            }
     }
 }

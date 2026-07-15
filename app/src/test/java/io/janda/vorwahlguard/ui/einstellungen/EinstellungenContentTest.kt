@@ -65,6 +65,7 @@ class EinstellungenContentTest {
         context.resources.getQuantityString(R.plurals.settings_retention_days, days, days)
 
     private fun loadedState(
+        roleAvailable: Boolean = true,
         roleHeld: Boolean = false,
         contactsBypassEnabled: Boolean = false,
         pseudonymiseNumbers: Boolean = false,
@@ -75,7 +76,7 @@ class EinstellungenContentTest {
         appVersion: String = "1.2.3",
     ): EinstellungenUiState = EinstellungenUiState(
         loaded = true,
-        roleAvailable = true,
+        roleAvailable = roleAvailable,
         roleHeld = roleHeld,
         contactsBypassEnabled = contactsBypassEnabled,
         pseudonymiseNumbers = pseudonymiseNumbers,
@@ -136,6 +137,13 @@ class EinstellungenContentTest {
     @Test
     fun enableRoleButtonIsHiddenWhenRoleIsHeld() {
         setContent(loadedState(roleHeld = true))
+
+        composeTestRule.onNodeWithText(enableRoleButton).assertDoesNotExist()
+    }
+
+    @Test
+    fun enableRoleButtonIsHiddenWhenTheRoleIsUnavailableEvenIfNotHeld() {
+        setContent(loadedState(roleAvailable = false, roleHeld = false))
 
         composeTestRule.onNodeWithText(enableRoleButton).assertDoesNotExist()
     }

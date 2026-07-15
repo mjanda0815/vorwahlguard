@@ -43,7 +43,6 @@ substitute them and so a future replacement does not ripple into `:app`.
 | `ScreenIncomingCall` | driving | `VorwahlGuardScreeningService` (`:app`) |
 | `RuleRepository` | driven | `CachedRuleRepository` over `RuleDao` (`:app`) |
 | `CallEventRecorder` | driven | `RoomCallEventRecorder`, async on an application-scoped scope (`:app`) |
-| `SettingsRepository` | driven | `CachedSettingsRepository` over `SettingsStore` (DataStore) (`:app`) |
 | `ContactsLookup` | driven | `CachedContactsLookup` over `ContactsContract` (`:app`) |
 | `Clock` | driven | `SystemClock` (`:app`) |
 | `NumberNormalizer` | driven | `LibPhoneNumberNormalizer` (`:core-domain`) |
@@ -127,4 +126,8 @@ Non-obvious decisions go in `docs/adr/NNNN-title.md` using the Nygard format
   region + action for hashed rows, never a live `matchedRuleId` lookup
 - [`0013`](adr/0013-dashboard-top-rules-resolve-live-rule.md) — Übersicht's top-rules list
   resolves the live rule (unlike `0012`), since it answers "what is this rule doing today"
-- *(open)* — Voicemail redirection: is `disallowCall && !rejectCall` carrier-dependent?
+- [`0014`](adr/0014-log-allowed-calls.md) — Opt-in logging of allowed calls with a
+  `DecisionReason`; partially reverses `0006`'s "contact-bypassed calls are not recorded"
+
+Entries `0001`–`0005` above are unlinked because no ADR file was ever written for them — they
+record decisions taken directly in `CLAUDE.md`/`PROJECT.md`; keep them here only as an index.

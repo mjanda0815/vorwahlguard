@@ -63,6 +63,13 @@ public final class PhoneNumber {
 
     @Override
     public String toString() {
-        return "PhoneNumber[raw=" + raw + ", e164=" + e164 + ", region=" + region + "]";
+        // Never spell the number here (CLAUDE.md §1/§12: enforce privacy in code, not in
+        // prose). A stray Log.d(TAG, "" + number) or an exception message embedding a
+        // PhoneNumber must not leak it — only its presence/region is shown.
+        return "PhoneNumber[raw=" + redact(raw) + ", e164=" + redact(e164) + ", region=" + region + "]";
+    }
+
+    private static String redact(String value) {
+        return value == null ? "null" : "<redacted>";
     }
 }

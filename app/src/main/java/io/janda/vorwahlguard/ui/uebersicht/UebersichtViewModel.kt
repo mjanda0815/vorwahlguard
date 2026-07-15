@@ -10,10 +10,10 @@ import io.janda.vorwahlguard.data.events.RegionCount
 import io.janda.vorwahlguard.data.events.RuleIdCount
 import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
 import io.janda.vorwahlguard.di.DefaultDispatcher
+import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.screening.CallScreeningRoleProvider
 import io.janda.vorwahlguard.ui.regeln.RuleRowUiMapper
-import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -44,6 +44,7 @@ class UebersichtViewModel @Inject constructor(
     private val ruleSnapshotSource: RuleSnapshotSource,
     countryCatalog: CountryCatalog,
     private val roleProvider: CallScreeningRoleProvider,
+    private val clock: Clock,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -53,12 +54,12 @@ class UebersichtViewModel @Inject constructor(
     /**
      * Lower bound for the DAO query only, computed once at construction rather than per emission.
      * [DashboardUiMapper.toSparkline] re-derives the actual 30-day bucket window from a fresh
-     * `Instant.now()` on every emission and discards anything outside it, so the *rendered*
+     * [Clock.now] on every emission and discards anything outside it, so the *rendered*
      * sparkline does slide day to day across a long-lived ViewModel — only the query's lower
      * bound stays fixed, which just means a harmless, shrinking over-fetch (never a stale render)
      * the longer the ViewModel lives past construction.
      */
-    private val thirtyDaysAgoMillis = Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
+    private val thirtyDaysAgoMillis = clock.now().minus(30, ChronoUnit.DAYS).toEpochMilli()
 
     private val _uiState = MutableStateFlow(UebersichtUiState())
     val uiState: StateFlow<UebersichtUiState> = _uiState.asStateFlow()
@@ -83,7 +84,7 @@ class UebersichtViewModel @Inject constructor(
                 withContext(defaultDispatcher) {
                     val locale = Locale.getDefault()
                     val zone = ZoneId.systemDefault()
-                    val sparkline = mapper.toSparkline(agg.occurredAtMillis, Instant.now(), zone)
+                    val sparkline = mapper.toSparkline(agg.occurredAtMillis, clock.now(), zone)
                     val topCountries = agg.topRegions.map { mapper.toTopCountry(it, locale) }
                     val rulesById = rules.associateBy { it.id() }
                     val topRuleRows = mapper.toTopRules(agg.topRules, rulesById, ruleRowMapper, locale)

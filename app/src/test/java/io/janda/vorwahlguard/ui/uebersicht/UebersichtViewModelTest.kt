@@ -11,6 +11,7 @@ import io.janda.vorwahlguard.domain.model.Country
 import io.janda.vorwahlguard.domain.model.PatternSyntax
 import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
+import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.screening.CallScreeningRoleProvider
 import io.janda.vorwahlguard.ui.regeln.addrule.MainDispatcherRule
@@ -62,6 +63,7 @@ class UebersichtViewModelTest {
     private lateinit var ruleSnapshotSource: RuleSnapshotSource
     private lateinit var countryCatalog: CountryCatalog
     private lateinit var roleProvider: CallScreeningRoleProvider
+    private lateinit var clock: Clock
 
     private val liveRule = Rule(
         "rule-live",
@@ -98,10 +100,13 @@ class UebersichtViewModelTest {
         every { roleProvider.isRoleAvailable() } returns false
         every { roleProvider.isRoleHeld() } returns false
         every { roleProvider.createRoleRequestIntent() } returns null
+
+        clock = mockk()
+        every { clock.now() } returns Instant.parse("2026-07-15T12:00:00Z")
     }
 
     private fun createViewModel(): UebersichtViewModel =
-        UebersichtViewModel(dao, ruleSnapshotSource, countryCatalog, roleProvider, dispatcher)
+        UebersichtViewModel(dao, ruleSnapshotSource, countryCatalog, roleProvider, clock, dispatcher)
 
     @Test
     fun `a combined emission across all flows produces a loaded state`() = runTest(dispatcher) {

@@ -66,7 +66,10 @@ fun EinstellungenScreen(modifier: Modifier = Modifier, viewModel: EinstellungenV
             onRetentionSelected = viewModel::onRetentionDaysSelected,
             onLogAllowedToggled = viewModel::onLogAllowedCallsToggled,
             onOpenRepo = {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(repoUrl)))
+                // A device with no browser (not exotic for this app's de-Googled audience) has
+                // nothing to resolve ACTION_VIEW — startActivity would throw
+                // ActivityNotFoundException and kill the process. Fail quietly instead.
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(repoUrl))) }
             },
             modifier = Modifier.padding(innerPadding),
         )

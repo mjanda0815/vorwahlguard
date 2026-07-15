@@ -9,11 +9,6 @@
     <string name="nav_log">Log</string>
     <string name="nav_settings">Settings</string>
 
-    <!-- M0 placeholders (replaced with real screens in M4) -->
-    <string name="screen_overview_placeholder">Overview — coming soon</string>
-    <string name="screen_rules_placeholder">Rules — coming soon</string>
-    <string name="screen_log_placeholder">Log — coming soon</string>
-    <string name="screen_settings_placeholder">Settings — coming soon</string>
 
     <!-- Rule creation (issue #6) -->
     <string name="rules_fab_add">Add rule</string>

@@ -84,7 +84,6 @@ public interface ScreenIncomingCall {
 public interface RuleRepository    { List<Rule> activeRules(); }
 public interface CallEventRecorder { void record(CallEvent event); }
 public interface Clock             { Instant now(); }
-public interface SettingsRepository { Settings current(); }
 // contact membership is a plain boolean lookup — the adapter never hands a raw
 // contact list into core-domain, only the yes/no answer for one number
 public interface ContactsLookup    { boolean isKnownContact(PhoneNumber number); }
@@ -107,7 +106,6 @@ public interface CountryCatalog {
 | `RuleRepository` | `CachedRuleRepository` → in-memory snapshot, invalidated on Room change |
 | `CallEventRecorder` | `RoomCallEventRecorder`, enqueued on a background dispatcher |
 | `Clock` | `SystemClock` |
-| `SettingsRepository` | `CachedSettingsRepository` (hot-path-safe in-memory cache) over `SettingsStore` (DataStore) |
 | `ContactsLookup` | `CachedContactsLookup` over `ContactsContract`, only queried when `contactsBypassEnabled` is true; no-op (always `false`) if `READ_CONTACTS` was never granted |
 
 ---

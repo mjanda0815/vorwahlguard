@@ -38,6 +38,13 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug
 
+      # R8 is only exercised in the release build; a broken libphonenumber -keep rule (empty
+      # country picker / normalization crash) is invisible to debug builds and every test
+      # (CLAUDE.md §13). CI has no keystore, so this produces an unsigned APK — that must still
+      # succeed. The "install a release build and create a +43* rule" check stays manual.
+      - name: Assemble release APK (unsigned, R8)
+        run: ./gradlew :app:assembleRelease
+
       - name: Android lint
         run: ./gradlew lint
 

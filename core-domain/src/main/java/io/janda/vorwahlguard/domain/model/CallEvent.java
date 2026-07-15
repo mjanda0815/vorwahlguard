@@ -92,9 +92,11 @@ public final class CallEvent {
 
     @Override
     public String toString() {
+        // numberOrHash is redacted (CLAUDE.md §1/§12): it may be a raw E.164 number, and a
+        // toString() must never be the path a number leaks into a log or exception message.
         return "CallEvent[id=" + id
                 + ", occurredAt=" + occurredAt
-                + ", numberOrHash=" + numberOrHash
+                + ", numberOrHash=" + (numberOrHash == null ? "null" : "<redacted>")
                 + ", regionCode=" + regionCode
                 + ", matchedRuleId=" + matchedRuleId
                 + ", action=" + action
