@@ -48,6 +48,12 @@
         <item quantity="one">%1$d Gebiet</item>
         <item quantity="other">%1$d Gebiete</item>
     </plurals>
+    <string name="rules_swipe_hint">← Regel zum Löschen nach links wischen</string>
+    <plurals name="rules_regions_more">
+        <item quantity="one">… und %1$d weiteres</item>
+        <item quantity="other">… und %1$d weitere</item>
+    </plurals>
+    <string name="rules_regions_collapse">Weniger anzeigen</string>
 
     <!-- Protokoll (Issue #25) -->
     <string name="log_filter_all">Alle</string>

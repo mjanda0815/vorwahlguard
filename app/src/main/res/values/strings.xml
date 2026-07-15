@@ -50,6 +50,12 @@
         <item quantity="one">%1$d region</item>
         <item quantity="other">%1$d regions</item>
     </plurals>
+    <string name="rules_swipe_hint">← Swipe a rule left to delete it</string>
+    <plurals name="rules_regions_more">
+        <item quantity="one">… and %1$d more</item>
+        <item quantity="other">… and %1$d more</item>
+    </plurals>
+    <string name="rules_regions_collapse">Show less</string>
 
     <!-- Protokoll (issue #25) -->
     <string name="log_filter_all">All</string>

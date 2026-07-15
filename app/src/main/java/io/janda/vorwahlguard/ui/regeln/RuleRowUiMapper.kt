@@ -29,7 +29,12 @@ class RuleRowUiMapper(
                 val description = catalog.describe(pattern)
                 val countries = description.countries()
                 if (description.ambiguous()) {
-                    RuleLabel.AmbiguousCode(countries.size)
+                    // Keep the whole region list (flag + localized name each), not just the count:
+                    // the list body renders every affected region (issue #91). Order follows the
+                    // catalog's ISO-2 sort (LibPhoneNumberCountryCatalog).
+                    RuleLabel.AmbiguousCode(
+                        countries.map { RegionEntry(it.flagEmoji(), it.displayName(locale)) },
+                    )
                 } else if (countries.isEmpty()) {
                     // No known calling code resolves this prefix (CountryCatalog.describe can
                     // return an empty, unambiguous list, e.g. an unrecognized calling code) —
