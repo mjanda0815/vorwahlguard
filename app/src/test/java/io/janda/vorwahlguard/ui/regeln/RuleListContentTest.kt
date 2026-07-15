@@ -84,8 +84,11 @@ class RuleListContentTest {
         val row = RuleRowUi("1", "+44*", RuleAction.SILENCE, RuleLabel.AmbiguousCode(regions))
         setContent(RegelnUiState(blacklist = listOf(row), loaded = true))
 
+        // The pattern sits in its own leading column, the count in the second column (issue #91
+        // follow-up) — two separate nodes, not one "+44* · 4 Gebiete" string.
         val regionCountText = context.resources.getQuantityString(R.plurals.rules_region_count, 4, 4)
-        composeTestRule.onNodeWithText("+44* · $regionCountText").assertExists()
+        composeTestRule.onNodeWithText("+44*").assertExists()
+        composeTestRule.onNodeWithText(regionCountText).assertExists()
     }
 
     @Test
@@ -117,9 +120,8 @@ class RuleListContentTest {
         val moreText = context.resources.getQuantityString(R.plurals.rules_regions_more, 4, 4)
         composeTestRule.onNodeWithText(moreText).assertExists()
 
-        // Tapping the card expands it and reveals the previously hidden regions.
-        val header = "+1* · " + context.resources.getQuantityString(R.plurals.rules_region_count, 8, 8)
-        composeTestRule.onNodeWithText(header).performClick()
+        // Tapping the card (here via its leading pattern cell) expands it and reveals the rest.
+        composeTestRule.onNodeWithText("+1*").performClick()
         composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText("Gebiet 5").assertExists()

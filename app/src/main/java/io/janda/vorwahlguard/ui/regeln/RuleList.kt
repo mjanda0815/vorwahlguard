@@ -6,9 +6,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -31,6 +33,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.janda.vorwahlguard.R
+import io.janda.vorwahlguard.domain.model.RuleAction
 import io.janda.vorwahlguard.ui.regeln.addrule.labelRes
 
 /**
@@ -38,6 +41,14 @@ import io.janda.vorwahlguard.ui.regeln.addrule.labelRes
  * tap-to-expand affordance (issue #91). `+44*` (4 regions) fits exactly; `+1*` (~24) collapses.
  */
 private const val COLLAPSED_REGION_LIMIT = 4
+
+/**
+ * Fixed width of the leading "pattern" column (issue #91 follow-up). Every geo rule puts its
+ * blocked pattern here so the country/region column lines up across rows and the region lines of a
+ * multi-region rule sit directly under its count — a firmer grid than free-flowing text. Sized to
+ * fit the usual prefixes (`+43663*`); a rare longer prefix wraps rather than pushing the column.
+ */
+private val PATTERN_COLUMN_WIDTH = 88.dp
 
 /**
  * Stateless rules list body (issue #23): a swipe-to-delete hint, a whitelist section, a blacklist
@@ -143,53 +154,105 @@ private fun DeleteBackground() {
 private fun RuleRow(row: RuleRowUi) {
     when (val label = row.label) {
         is RuleLabel.AmbiguousCode -> AmbiguousRuleRow(row, label)
-        is RuleLabel.Country, RuleLabel.Private, RuleLabel.Raw -> SingleLineRuleRow(row)
+        is RuleLabel.Country -> CountryRuleRow(row, label)
+        RuleLabel.Private -> PrivateRuleRow(row)
+        RuleLabel.Raw -> RawRuleRow(row)
     }
 }
 
+/** The card container shared by every single-line rule row: surface, padding, column spacing. */
 @Composable
-private fun SingleLineRuleRow(row: RuleRowUi) {
+private fun RuleCardRow(
+    verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
+    content: @Composable RowScope.() -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = verticalAlignment,
+        content = content,
+    )
+}
+
+/** The blocked pattern in the fixed leading column, so descriptions line up across rows. */
+@Composable
+private fun PatternColumn(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier.width(PATTERN_COLUMN_WIDTH),
+        color = MaterialTheme.colorScheme.onSurface,
+    )
+}
+
+@Composable
+private fun ActionLabel(action: RuleAction) {
+    Text(
+        text = stringResource(action.labelRes()),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** One region as "flag  name", used both for a single-country rule and each multi-region line. */
+@Composable
+private fun RowScope.RegionCell(flagEmoji: String, name: String, weighted: Boolean = false) {
+    Row(
+        modifier = if (weighted) Modifier.weight(1f) else Modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        when (val label = row.label) {
-            is RuleLabel.Country -> Text(text = label.flagEmoji)
-            RuleLabel.Private -> Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
-            is RuleLabel.AmbiguousCode, RuleLabel.Raw -> Unit
-        }
-        Text(
-            text = singleLineLabelText(row),
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = stringResource(row.action.labelRes()),
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Text(text = flagEmoji)
+        Text(text = name, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun singleLineLabelText(row: RuleRowUi): String = when (val label = row.label) {
-    // The blocked pattern is always visible now, not just for multi-region rules (issue #91):
-    // a single-country rule reads "Österreich · +43*" instead of just the country name.
-    is RuleLabel.Country -> label.name + " · " + row.patternText
-    RuleLabel.Private -> stringResource(R.string.rules_private_label)
-    RuleLabel.Raw -> row.patternText
-    // AmbiguousCode is rendered by AmbiguousRuleRow, never here; kept for exhaustiveness.
-    is RuleLabel.AmbiguousCode -> row.patternText
+private fun CountryRuleRow(row: RuleRowUi, label: RuleLabel.Country) {
+    RuleCardRow {
+        PatternColumn(row.patternText)
+        RegionCell(label.flagEmoji, label.name, weighted = true)
+        ActionLabel(row.action)
+    }
+}
+
+@Composable
+private fun RawRuleRow(row: RuleRowUi) {
+    // An exact number or the bare wildcard: the pattern is the whole content, so it flows across
+    // the width instead of sitting in the fixed column (a full E.164 would not fit there).
+    RuleCardRow {
+        Text(
+            text = row.patternText,
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        ActionLabel(row.action)
+    }
+}
+
+@Composable
+private fun PrivateRuleRow(row: RuleRowUi) {
+    RuleCardRow {
+        // The lock occupies the pattern column so the label aligns with the other rows' descriptions.
+        Box(modifier = Modifier.width(PATTERN_COLUMN_WIDTH)) {
+            Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+        }
+        Text(
+            text = stringResource(R.string.rules_private_label),
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        ActionLabel(row.action)
+    }
 }
 
 /**
- * A multi-region rule (issue #91): the code + region count as a header, then one line per affected
- * region (flag + localized name), indented below it. When there are more than [COLLAPSED_REGION_LIMIT]
- * regions the tail is hidden behind a "… und X weitere" line and the whole card toggles on tap. It
- * remains a single [SwipeToDismissBox] child, so it still deletes as one unit.
+ * A multi-region rule (issue #91): the pattern in the leading column, then the region count and one
+ * line per affected region (flag + localized name) stacked in the second column so they line up
+ * under the count. When there are more than [COLLAPSED_REGION_LIMIT] regions the tail is hidden
+ * behind a "… und X weitere" line and the whole card toggles on tap. It remains a single
+ * [SwipeToDismissBox] child, so it still deletes as one unit.
  */
 @Composable
 private fun AmbiguousRuleRow(row: RuleRowUi, label: RuleLabel.AmbiguousCode) {
@@ -204,50 +267,42 @@ private fun AmbiguousRuleRow(row: RuleRowUi, label: RuleLabel.AmbiguousCode) {
         .background(MaterialTheme.colorScheme.surface)
     val container = if (expandable) background.clickable { expanded = !expanded } else background
 
-    Column(
+    Row(
         modifier = container.padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        PatternColumn(row.patternText)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = row.patternText + " · " +
-                    pluralStringResource(R.plurals.rules_region_count, total, total),
-                modifier = Modifier.weight(1f),
+                text = pluralStringResource(R.plurals.rules_region_count, total, total),
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = stringResource(row.action.labelRes()),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        shown.forEach { region ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = region.flagEmoji)
-                Text(text = region.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            shown.forEach { region ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(text = region.flagEmoji)
+                    Text(text = region.name, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (expandable) {
+                Text(
+                    text = if (expanded) {
+                        stringResource(R.string.rules_regions_collapse)
+                    } else {
+                        pluralStringResource(R.plurals.rules_regions_more, hidden, hidden)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
-        if (expandable) {
-            Text(
-                text = if (expanded) {
-                    stringResource(R.string.rules_regions_collapse)
-                } else {
-                    pluralStringResource(R.plurals.rules_regions_more, hidden, hidden)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 8.dp),
-            )
-        }
+        ActionLabel(row.action)
     }
 }
 
