@@ -290,8 +290,9 @@ password into the conversation.
 - **R8 (`isMinifyEnabled = true`) is where a debug-clean app breaks.** libphonenumber loads
   metadata by resource name at runtime, which R8 cannot see statically — a missing `-keep` rule
   shows up as an empty country picker or a normalization crash, only in the release build, only
-  on a real device. `docs/RELEASE.md` §4 has a starting `proguard-rules.pro`; treat it as
-  unverified until someone has actually installed a release build and created a `+43*` rule.
+  on a real device. `docs/RELEASE.md` §4 has the `proguard-rules.pro` keep-rules, verified
+  on-device on 2026-07-15 (release build v0.2.0, country picker + `+43*` rule, no crash). Re-run
+  that check after any libphonenumber bump or change to those rules.
 - **A signature change revokes `ROLE_CALL_SCREENING`.** Reinstalling a release build over a
   debug build (different signing certificates) requires `adb uninstall` first, and that
   uninstall — not just the reinstall — silently drops the call-screening role. `CallScreeningRoleProvider`'s
