@@ -4,17 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.janda.vorwahlguard.data.events.CallEventDao
-import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
+import io.janda.vorwahlguard.data.rules.CreateRuleResult
 import io.janda.vorwahlguard.data.rules.RuleWriter
 import io.janda.vorwahlguard.di.DefaultDispatcher
-import io.janda.vorwahlguard.domain.model.PatternSyntax
-import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
-import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import java.time.ZoneId
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -40,9 +36,7 @@ import kotlinx.coroutines.withContext
 class ProtokollViewModel @Inject constructor(
     private val dao: CallEventDao,
     countryCatalog: CountryCatalog,
-    private val ruleSnapshotSource: RuleSnapshotSource,
     private val ruleWriter: RuleWriter,
-    private val clock: Clock,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -52,9 +46,6 @@ class ProtokollViewModel @Inject constructor(
     private var selectedFilter: RuleAction? = null
     private var loaded = false
     private var pendingRule: PendingRule? = null
-
-    /** The pattern text of every persisted rule, kept current to gate duplicate creation (issue #76). */
-    private var existingPatternTexts: Set<String> = emptySet()
 
     private val _uiState = MutableStateFlow(ProtokollUiState())
     val uiState: StateFlow<ProtokollUiState> = _uiState.asStateFlow()
@@ -72,11 +63,6 @@ class ProtokollViewModel @Inject constructor(
                 }
                 loaded = true
                 recompute()
-            }
-        }
-        viewModelScope.launch {
-            ruleSnapshotSource.observe().collect { rules ->
-                existingPatternTexts = rules.map { it.pattern().text() }.toSet()
             }
         }
     }
@@ -108,23 +94,21 @@ class ProtokollViewModel @Inject constructor(
     }
 
     /**
-     * Persists a rule with [action] for the pending row's pattern, unless a rule with that exact
-     * pattern text already exists — in which case nothing is written and
-     * [ProtokollEffect.RuleAlreadyExists] is emitted (issue #76). Closes the dialog either way.
+     * Persists a rule with [action] for the pending row's pattern via the shared, atomic
+     * [RuleWriter.createIfAbsent] (issue #76/#78): it creates the rule only if none with that
+     * exact pattern exists, and reports which happened. Closes the dialog either way.
      */
     fun createRule(action: RuleAction) {
         val pending = pendingRule ?: return
         pendingRule = null
         recompute()
 
-        if (existingPatternTexts.contains(pending.patternText)) {
-            viewModelScope.launch { _effects.send(ProtokollEffect.RuleAlreadyExists) }
-            return
-        }
-        val pattern = runCatching { PatternSyntax.parse(pending.patternText) }.getOrNull() ?: return
         viewModelScope.launch {
-            ruleWriter.save(Rule(UUID.randomUUID().toString(), pattern, action, true, null, clock.now()))
-            _effects.send(ProtokollEffect.RuleCreated(action))
+            val effect = when (ruleWriter.createIfAbsent(pending.patternText, action)) {
+                CreateRuleResult.CREATED -> ProtokollEffect.RuleCreated(action)
+                CreateRuleResult.ALREADY_EXISTS -> ProtokollEffect.RuleAlreadyExists
+            }
+            _effects.send(effect)
         }
     }
 

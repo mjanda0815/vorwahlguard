@@ -1,24 +1,21 @@
 package io.janda.vorwahlguard.ui.regeln.addrule
 
 import io.janda.vorwahlguard.data.rules.RuleSnapshotSource
+import io.janda.vorwahlguard.data.rules.CreateRuleResult
 import io.janda.vorwahlguard.data.rules.RuleWriter
 import io.janda.vorwahlguard.domain.model.Country
 import io.janda.vorwahlguard.domain.model.PatternSyntax
 import io.janda.vorwahlguard.domain.model.Rule
 import io.janda.vorwahlguard.domain.model.RuleAction
-import io.janda.vorwahlguard.domain.port.out.Clock
 import io.janda.vorwahlguard.domain.port.out.CountryCatalog
 import io.janda.vorwahlguard.domain.port.out.NumberNormalizer
 import io.janda.vorwahlguard.screening.SimRegionProvider
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import java.time.Instant
 import java.util.Locale
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestDispatcher
@@ -72,7 +69,6 @@ class AddRuleViewModelTest {
     @get:JUnitRule
     val mainDispatcherRule = MainDispatcherRule(dispatcher)
 
-    private val fixedInstant: Instant = Instant.parse("2026-07-13T10:00:00Z")
 
     private lateinit var countryCatalog: CountryCatalog
     private lateinit var rulesFlow: MutableStateFlow<List<Rule>>
@@ -80,10 +76,10 @@ class AddRuleViewModelTest {
     private lateinit var ruleWriter: RuleWriter
     private lateinit var numberNormalizer: NumberNormalizer
     private lateinit var simRegionProvider: SimRegionProvider
-    private lateinit var clock: Clock
     private lateinit var viewModel: AddRuleViewModel
 
-    private val savedRules = mutableListOf<Rule>()
+    private val createdPatterns = mutableListOf<String>()
+    private val createdActions = mutableListOf<RuleAction>()
 
     @Before
     fun setUp() {
@@ -104,16 +100,16 @@ class AddRuleViewModelTest {
         every { ruleSnapshotSource.load() } returns emptyList()
 
         ruleWriter = mockk()
-        savedRules.clear()
-        coEvery { ruleWriter.save(capture(savedRules)) } just Runs
+        createdPatterns.clear()
+        createdActions.clear()
+        coEvery {
+            ruleWriter.createIfAbsent(capture(createdPatterns), capture(createdActions))
+        } returns CreateRuleResult.CREATED
 
         numberNormalizer = mockk(relaxed = true)
 
         simRegionProvider = mockk(relaxed = true)
         every { simRegionProvider.current() } returns "AT"
-
-        clock = mockk()
-        every { clock.now() } returns fixedInstant
 
         viewModel = AddRuleViewModel(
             countryCatalog,
@@ -121,7 +117,6 @@ class AddRuleViewModelTest {
             ruleWriter,
             numberNormalizer,
             simRegionProvider,
-            clock,
             dispatcher,
         )
     }
@@ -320,29 +315,24 @@ class AddRuleViewModelTest {
 
         viewModel.save()
 
-        coVerify(exactly = 0) { ruleWriter.save(any()) }
-        assertTrue(savedRules.isEmpty())
+        coVerify(exactly = 0) { ruleWriter.createIfAbsent(any(), any()) }
+        assertTrue(createdPatterns.isEmpty())
         assertFalse(viewModel.uiState.value.saved)
     }
 
     @Test
-    fun `save persists the current draft exactly once and marks the state saved`() = runTest(dispatcher) {
+    fun `save creates the current draft rule exactly once and marks the state saved`() = runTest(dispatcher) {
         val at = viewModel.uiState.value.countries.first { it.iso2 == "AT" }
         viewModel.selectCountry(at)
         assertTrue(viewModel.uiState.value.saveEnabled)
 
         viewModel.save()
 
-        coVerify(exactly = 1) { ruleWriter.save(any()) }
-        assertEquals(1, savedRules.size)
-        val saved = savedRules.single()
-        assertEquals(PatternSyntax.parse("+43*"), saved.pattern())
-        assertEquals(RuleAction.SILENCE, saved.action())
-        assertTrue(saved.enabled())
-        assertNull(saved.label())
-        assertEquals(fixedInstant, saved.createdAt())
-        assertTrue(saved.id().isNotBlank())
-        UUID.fromString(saved.id())
+        // The rule id + timestamp are RuleWriter's concern now (issue #78); the ViewModel's
+        // contract is that it hands createIfAbsent the current draft's pattern text and action.
+        coVerify(exactly = 1) { ruleWriter.createIfAbsent("+43*", RuleAction.SILENCE) }
+        assertEquals(listOf("+43*"), createdPatterns)
+        assertEquals(listOf(RuleAction.SILENCE), createdActions)
         assertTrue(viewModel.uiState.value.saved)
     }
 

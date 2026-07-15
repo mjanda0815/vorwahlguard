@@ -16,6 +16,19 @@ public final class ScreeningDecision {
     private final DecisionReason reason;
 
     public ScreeningDecision(RuleAction action, String matchedRuleId, DecisionReason reason) {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(reason, "reason");
+        // ADR 0014 invariant, enforced rather than merely documented: matchedRuleId is non-null
+        // exactly when a rule fired (RULE_MATCH). The Protokoll/dashboard read semantics key on
+        // reason; matched() keys on the id — this constructor is what keeps the two definitions
+        // from drifting apart.
+        boolean isRuleMatch = reason == DecisionReason.RULE_MATCH;
+        if (isRuleMatch && matchedRuleId == null) {
+            throw new IllegalArgumentException("RULE_MATCH requires a non-null matchedRuleId");
+        }
+        if (!isRuleMatch && matchedRuleId != null) {
+            throw new IllegalArgumentException(reason + " must have a null matchedRuleId");
+        }
         this.action = action;
         this.matchedRuleId = matchedRuleId;
         this.reason = reason;
