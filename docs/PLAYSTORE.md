@@ -189,12 +189,12 @@ der Onboarding (Rolle erteilen) und eine Regel zeigt.
 
 ## 6. Technische Vorbereitung im Repo
 
-- [ ] **R8-Release-Build auf dem Gerät verifizieren** — der noch offene
-      Blocker aus dem Store-Readiness-Review: Release bauen und signieren
-      (docs/RELEASE.md), installieren, Länderauswahl öffnen, `+43*`-Regel
-      anlegen, Testnummer normalisieren. Die libphonenumber-Keep-Rules gelten
-      bis dahin als unverifiziert (proguard-rules.pro sagt das selbst).
-      Der schnellste automatisierte Check existiert schon:
+- [x] **R8-Release-Build auf dem Gerät verifiziert** — erledigt am 2026-07-15
+      (Release v0.2.0, versionCode 148, v2-Signatur): Länderauswahl geöffnet und
+      `+43*`-Regel angelegt, kein Crash, kein Normalisierungsfehler. Die
+      libphonenumber-Keep-Rules gelten damit als bestätigt (docs/RELEASE.md §4).
+      Nach jedem libphonenumber-Update oder Änderung der Keep-Rules erneut
+      prüfen — der schnellste automatisierte Check ist
       `ScreeningDecisionStackInstrumentedTest` gegen den Release-Build
       (`adb shell am instrument` gegen die Release-Test-APK).
 - [ ] **AAB statt APK:** Play akzeptiert nur App Bundles →
