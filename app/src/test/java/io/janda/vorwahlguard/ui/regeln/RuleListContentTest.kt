@@ -3,6 +3,7 @@ package io.janda.vorwahlguard.ui.regeln
 import android.content.Context
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.test.core.app.ApplicationProvider
@@ -67,30 +68,70 @@ class RuleListContentTest {
     }
 
     @Test
-    fun countryRowShowsTheCountryNameAndTheActionLabel() {
+    fun countryRowShowsTheCountryNameThePatternAndTheActionLabel() {
         val row = RuleRowUi("1", "+43*", RuleAction.BLOCK, RuleLabel.Country("🇦🇹", "Österreich"))
         setContent(RegelnUiState(blacklist = listOf(row), loaded = true))
 
+        // The blocked pattern is now shown next to the country name (issue #91): "Österreich · +43*".
         composeTestRule.onNodeWithText("Österreich", substring = true).assertExists()
+        composeTestRule.onNodeWithText("+43*", substring = true).assertExists()
         composeTestRule.onNodeWithText(context.getString(RuleAction.BLOCK.labelRes())).assertExists()
     }
 
     @Test
-    fun ambiguousCodeRowShowsThePatternTextPlusThePluralizedRegionCount() {
-        val row = RuleRowUi("1", "+1*", RuleAction.SILENCE, RuleLabel.AmbiguousCode(20))
+    fun ambiguousCodeRowHeaderShowsThePatternTextAndTheRegionCount() {
+        val regions = List(4) { RegionEntry("🏳", "Gebiet ${it + 1}") }
+        val row = RuleRowUi("1", "+44*", RuleAction.SILENCE, RuleLabel.AmbiguousCode(regions))
         setContent(RegelnUiState(blacklist = listOf(row), loaded = true))
 
-        val regionCountText = context.resources.getQuantityString(R.plurals.rules_region_count, 20, 20)
-        composeTestRule.onNodeWithText("+1* ($regionCountText)").assertExists()
+        val regionCountText = context.resources.getQuantityString(R.plurals.rules_region_count, 4, 4)
+        composeTestRule.onNodeWithText("+44* · $regionCountText").assertExists()
     }
 
     @Test
-    fun ambiguousCodeRowUsesSingularPluralFormForACountOfOne() {
-        val row = RuleRowUi("1", "+7*", RuleAction.SILENCE, RuleLabel.AmbiguousCode(1))
+    fun ambiguousCodeRowWithFourRegionsShowsEveryRegionAndNoExpandAffordance() {
+        val regions = listOf(
+            RegionEntry("🇬🇧", "Vereinigtes Königreich"),
+            RegionEntry("🇬🇬", "Guernsey"),
+            RegionEntry("🇮🇲", "Isle of Man"),
+            RegionEntry("🇯🇪", "Jersey"),
+        )
+        val row = RuleRowUi("1", "+44*", RuleAction.BLOCK, RuleLabel.AmbiguousCode(regions))
         setContent(RegelnUiState(blacklist = listOf(row), loaded = true))
 
-        val regionCountText = context.resources.getQuantityString(R.plurals.rules_region_count, 1, 1)
-        composeTestRule.onNodeWithText("+7* ($regionCountText)").assertExists()
+        composeTestRule.onNodeWithText("Guernsey").assertExists()
+        composeTestRule.onNodeWithText("Jersey").assertExists()
+        // Exactly four regions fit the collapse limit, so there is no "… und X weitere" line.
+        composeTestRule.onNodeWithText(context.getString(R.string.rules_regions_collapse)).assertDoesNotExist()
+    }
+
+    @Test
+    fun ambiguousCodeRowWithManyRegionsCollapsesTheTailThenExpandsOnTap() {
+        val regions = List(8) { RegionEntry("🏳", "Gebiet ${it + 1}") }
+        val row = RuleRowUi("1", "+1*", RuleAction.SILENCE, RuleLabel.AmbiguousCode(regions))
+        setContent(RegelnUiState(blacklist = listOf(row), loaded = true))
+
+        // Collapsed: the first four regions show, the fifth is hidden behind the "more" line.
+        composeTestRule.onNodeWithText("Gebiet 4").assertExists()
+        composeTestRule.onNodeWithText("Gebiet 5").assertDoesNotExist()
+        val moreText = context.resources.getQuantityString(R.plurals.rules_regions_more, 4, 4)
+        composeTestRule.onNodeWithText(moreText).assertExists()
+
+        // Tapping the card expands it and reveals the previously hidden regions.
+        val header = "+1* · " + context.resources.getQuantityString(R.plurals.rules_region_count, 8, 8)
+        composeTestRule.onNodeWithText(header).performClick()
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText("Gebiet 5").assertExists()
+        composeTestRule.onNodeWithText("Gebiet 8").assertExists()
+    }
+
+    @Test
+    fun theSwipeToDeleteHintIsShownWhenTheListHasRows() {
+        val row = RuleRowUi("1", "+436631234567", RuleAction.ALLOW, RuleLabel.Raw)
+        setContent(RegelnUiState(blacklist = listOf(row), loaded = true))
+
+        composeTestRule.onNodeWithText(context.getString(R.string.rules_swipe_hint)).assertExists()
     }
 
     @Test

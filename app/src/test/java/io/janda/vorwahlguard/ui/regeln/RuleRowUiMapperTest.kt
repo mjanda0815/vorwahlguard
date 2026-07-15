@@ -58,14 +58,25 @@ class RuleRowUiMapperTest {
     }
 
     @Test
-    fun `prefix pattern resolving to an ambiguous calling code produces an AmbiguousCode label with the region count`() {
+    fun `prefix pattern resolving to an ambiguous calling code produces an AmbiguousCode label with every region`() {
         val rule = rule("+1*")
-        val regions = listOf(Country("US", 1), Country("CA", 1))
-        every { catalog.describe(rule.pattern()) } returns PatternDescription(rule.pattern(), regions, true)
+        val us = Country("US", 1)
+        val ca = Country("CA", 1)
+        every { catalog.describe(rule.pattern()) } returns PatternDescription(rule.pattern(), listOf(us, ca), true)
 
         val row = mapper.toRow(rule, locale)
 
-        assertEquals(RuleLabel.AmbiguousCode(2), row.label)
+        // The whole region list is kept (flag + localized name each, in the catalog's order),
+        // not just the count (issue #91).
+        assertEquals(
+            RuleLabel.AmbiguousCode(
+                listOf(
+                    RegionEntry(us.flagEmoji(), us.displayName(locale)),
+                    RegionEntry(ca.flagEmoji(), ca.displayName(locale)),
+                ),
+            ),
+            row.label,
+        )
     }
 
     @Test
