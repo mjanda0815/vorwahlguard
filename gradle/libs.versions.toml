@@ -30,7 +30,7 @@ navigationCompose = "2.9.8"
 hiltNavigationCompose = "1.4.0"
 
 # --- DI / persistence ---
-hilt = "2.59.2"
+hilt = "2.60.1"
 room = "2.8.4"
 datastore = "1.2.1"
 # room-migration 2.8.4 (pulled by room-testing's MigrationTestHelper) is compiled against
