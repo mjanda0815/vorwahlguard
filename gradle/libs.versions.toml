@@ -23,7 +23,7 @@ targetSdk = "36"
 
 # --- AndroidX / Compose ---
 composeBom = "2026.06.01"
-coreKtx = "1.17.0"
+coreKtx = "1.19.0"
 lifecycle = "2.11.0"
 activityCompose = "1.13.0"
 navigationCompose = "2.9.8"
