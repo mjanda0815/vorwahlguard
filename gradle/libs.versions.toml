@@ -51,7 +51,7 @@ robolectric = "4.16.1"
 mockk = "1.14.11"
 # Matches the kotlinx-coroutines-core version resolved transitively on :app's runtime
 # classpath (via lifecycle/room), verified with `./gradlew :app:dependencies`.
-kotlinxCoroutinesTest = "1.9.0"
+kotlinxCoroutinesTest = "1.11.0"
 
 # --- app/src/androidTest (real-device instrumented tests, issue #29 store-readiness review) ---
 androidxTestCore = "1.6.1"
